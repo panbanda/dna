@@ -4,6 +4,7 @@
 
 <img src=".github/logo.jpg" alt="DNA - Truth Artifact Management CLI" width="100%">
 
+[![GitHub Release](https://img.shields.io/github/v/release/panbanda/dna)](https://github.com/panbanda/dna/releases/latest)
 [![CI Status](https://github.com/panbanda/dna/workflows/CI/badge.svg)](https://github.com/panbanda/dna/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
@@ -57,7 +58,13 @@ dna search "authentication methods"
 
 ## Installation
 
-### Pre-built Binaries (Recommended)
+### Homebrew (Recommended)
+
+```bash
+brew install panbanda/dna/dna
+```
+
+### Pre-built Binaries
 
 Download the latest release for your platform:
 
@@ -168,83 +175,47 @@ dna mcp stdio --include-tools list_artifacts,search_artifacts
 # Read-only mode for safety
 ```
 
-## Architecture
-
-### Service-Oriented Design
-
-DNA uses a clean, layered architecture:
-
-```
-+-------------------------------------+
-|     Interface Layers (Thin)         |
-|  +----------+       +----------+    |
-|  |   CLI    |       |   MCP    |    |
-|  +----------+       +----------+    |
-+-------------------------------------+
-              |
-+-------------------------------------+
-|    Services (Business Logic)        |
-|  - artifact.rs  - search.rs         |
-|  - config.rs    - types.rs          |
-+-------------------------------------+
-              |
-+-------------------------------------+
-|      Infrastructure                 |
-|  - db/ (LanceDB)                    |
-|  - embedding/ (Local/OpenAI/Ollama) |
-|  - render/ (File system output)     |
-+-------------------------------------+
-```
-
-**Benefits**:
-- Framework-agnostic core logic
-- Easy to add new interfaces (REST API, gRPC)
-- Fully testable in isolation
-- Clear separation of concerns
-
-### Service Layer (Framework-Agnostic)
-- `/src/services/` - All business logic
-  - `artifact.rs` - CRUD operations
-  - `search.rs` - Semantic search
-  - `config.rs` - Configuration management
-  - `types.rs` - Core data structures
-
-### Interface Layers (Thin Wrappers)
-- `/src/cli/` - Command-line interface
-- `/src/mcp/` - MCP server protocol
-
-### Infrastructure
-- `/src/db/` - LanceDB integration
-- `/src/embedding/` - Embedding providers
-- `/src/render/` - File rendering
-
 ## Configuration
 
-Configure embedding providers in `.dna/config.toml`:
+### Changing the Embedding Model
 
+DNA supports multiple embedding providers. Configure in `.dna/config.toml`:
+
+**Local (Default - No Setup Required)**
 ```toml
 [model]
 provider = "local"
 name = "BAAI/bge-small-en-v1.5"
-
-# Or use OpenAI
-# provider = "openai"
-# name = "text-embedding-3-small"
-# api_key = "sk-..."  # Or set OPENAI_API_KEY env var
-
-# Or use Ollama
-# provider = "ollama"
-# name = "nomic-embed-text"
-# base_url = "http://localhost:11434"
 ```
 
-### Embedding Providers
+**OpenAI**
+```toml
+[model]
+provider = "openai"
+name = "text-embedding-3-small"  # or "text-embedding-3-large" for higher quality
+api_key = "sk-..."  # Or set OPENAI_API_KEY environment variable
+```
 
-| Provider | Best For | Setup |
-|----------|----------|-------|
-| **Local (Candle)** | Privacy, offline use | No setup required |
-| **OpenAI** | Best quality, production | Requires API key |
-| **Ollama** | Local + GPU acceleration | Install Ollama |
+**Ollama (Local with GPU Acceleration)**
+```toml
+[model]
+provider = "ollama"
+name = "nomic-embed-text"  # or "mxbai-embed-large", "all-minilm"
+base_url = "http://localhost:11434"
+```
+
+### Embedding Provider Comparison
+
+| Provider | Best For | Setup | Notes |
+|----------|----------|-------|-------|
+| **Local (Candle)** | Privacy, offline use | None | Uses `BAAI/bge-small-en-v1.5` by default |
+| **OpenAI** | Best quality, production | API key | `text-embedding-3-small` or `text-embedding-3-large` |
+| **Ollama** | Local + GPU acceleration | [Install Ollama](https://ollama.ai) | Run `ollama pull nomic-embed-text` first |
+
+After changing providers, re-index existing artifacts:
+```bash
+dna reindex
+```
 
 ## Development
 
