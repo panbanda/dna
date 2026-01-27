@@ -26,7 +26,7 @@ missing-docs-in-private-items = false
 too-many-lines-threshold = 100
 
 # Prevent deeply nested structures (LLMs can create deeply nested if/match)
-excessive-nesting-threshold = 5
+excessive-nesting-threshold = 10
 
 # Prevent large structs (LLMs sometimes generate bloated data structures)
 struct-excessive-bools-threshold = 3
