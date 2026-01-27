@@ -290,8 +290,7 @@ Add to your Claude Code or other MCP-compatible client:
   "mcpServers": {
     "dna": {
       "command": "dna",
-      "args": ["mcp", "stdio"],
-      "cwd": "/path/to/your/project"
+      "args": ["mcp", "stdio"]
     }
   }
 }
