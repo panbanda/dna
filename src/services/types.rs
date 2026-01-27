@@ -188,17 +188,9 @@ impl Default for ModelConfig {
 }
 
 /// Project configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProjectConfig {
     pub model: ModelConfig,
-}
-
-impl Default for ProjectConfig {
-    fn default() -> Self {
-        Self {
-            model: ModelConfig::default(),
-        }
-    }
 }
 
 #[cfg(test)]

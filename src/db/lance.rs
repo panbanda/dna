@@ -84,7 +84,7 @@ impl LanceDatabase {
 
     /// Convert a single artifact to RecordBatch
     fn artifact_to_batch(artifact: &Artifact) -> Result<RecordBatch> {
-        schema::artifacts_to_batch(&[artifact.clone()])
+        schema::artifacts_to_batch(std::slice::from_ref(artifact))
     }
 
     /// Convert RecordBatch row to Artifact
@@ -666,16 +666,6 @@ mod tests {
         let db_path = temp_dir.path().join("test.lance");
         let db = LanceDatabase::new(&db_path).await.unwrap();
         db.init().await.unwrap();
-
-        let ids: Vec<String> = (0..3)
-            .map(|i| {
-                let artifact = create_test_artifact(
-                    &format!("content {}", i),
-                    create_embedding(i as f32 * 0.1),
-                );
-                artifact.id.clone()
-            })
-            .collect();
 
         for i in 0..3 {
             let artifact =

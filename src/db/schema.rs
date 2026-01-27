@@ -83,12 +83,7 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
     // Build FixedSizeList for embeddings
     let embeddings: Vec<f32> = artifacts
         .iter()
-        .flat_map(|a| {
-            a.embedding
-                .as_ref()
-                .map(|e| e.as_slice())
-                .unwrap_or(&[0.0; 384])
-        })
+        .flat_map(|a| a.embedding.as_deref().unwrap_or(&[0.0; 384]))
         .copied()
         .collect();
     let values = Float32Array::from(embeddings);

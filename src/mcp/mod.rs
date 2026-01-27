@@ -276,7 +276,7 @@ impl McpServer {
         let limit = args["limit"].as_u64().map(|l| l as usize);
         let artifact_type = args["type"]
             .as_str()
-            .map(|t| parse_artifact_type(t))
+            .map(parse_artifact_type)
             .transpose()
             .map_err(|e| McpError {
                 code: -32602,
@@ -324,7 +324,7 @@ impl McpServer {
     ) -> std::result::Result<serde_json::Value, McpError> {
         let artifact_type = args["type"]
             .as_str()
-            .map(|t| parse_artifact_type(t))
+            .map(parse_artifact_type)
             .transpose()
             .map_err(|e| McpError {
                 code: -32602,
