@@ -409,8 +409,6 @@ DNA is under active development. Current status:
 - [x] OpenAI/Ollama providers
 - [x] File rendering
 - [ ] Web interface (planned)
-- [ ] API server (planned)
-- [ ] Plugin system (planned)
 
 ## Performance
 
