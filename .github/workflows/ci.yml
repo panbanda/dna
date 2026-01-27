@@ -99,7 +99,7 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   msrv:
-    name: MSRV (1.92.0)
+    name: MSRV (1.91.0)
     runs-on: ubuntu-latest
 
     steps:
@@ -110,7 +110,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.92.0
+        uses: dtolnay/rust-toolchain@1.91.0
 
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@v2

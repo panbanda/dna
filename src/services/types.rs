@@ -159,7 +159,7 @@ pub struct SearchFilters {
 }
 
 /// Search result with similarity score
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
     pub artifact: Artifact,
     pub score: f32,

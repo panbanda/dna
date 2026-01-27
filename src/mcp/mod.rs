@@ -1,15 +1,15 @@
 use crate::db::Database;
 use crate::embedding::EmbeddingProvider;
-use crate::services::{ArtifactService, SearchService};
+use crate::services::{ArtifactService, ArtifactType, ContentFormat, SearchFilters, SearchService};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::io::{BufRead, Write};
 use std::sync::Arc;
 
 /// MCP Server for DNA
 pub struct McpServer {
-    #[allow(dead_code)]
     artifact_service: ArtifactService,
-    #[allow(dead_code)]
     search_service: SearchService,
     include_tools: Option<Vec<String>>,
     exclude_tools: Option<Vec<String>>,
@@ -162,31 +162,394 @@ impl McpServer {
 
     /// Run stdio-based MCP server loop
     async fn stdio_loop(&self, tools: Vec<McpTool>) -> Result<()> {
-        // TODO: Implement full MCP protocol over stdio
-        // For now, just output tool list
-        println!("{}", serde_json::to_string_pretty(&tools)?);
+        let stdin = std::io::stdin();
+        let mut stdout = std::io::stdout();
+
+        // Send initial capabilities
+        let capabilities = McpCapabilities {
+            tools: tools.clone(),
+        };
+        let init_response = serde_json::json!({
+            "jsonrpc": "2.0",
+            "result": {
+                "capabilities": capabilities
+            }
+        });
+        writeln!(stdout, "{}", serde_json::to_string(&init_response)?)?;
+        stdout.flush()?;
+
+        // Process incoming requests
+        for line in stdin.lock().lines() {
+            let line = line?;
+            if line.is_empty() {
+                continue;
+            }
+
+            let response = match serde_json::from_str::<McpRequest>(&line) {
+                Ok(request) => self.handle_request(request, &tools).await,
+                Err(e) => McpResponse {
+                    jsonrpc: "2.0".to_string(),
+                    id: None,
+                    result: None,
+                    error: Some(McpError {
+                        code: -32700,
+                        message: format!("Parse error: {e}"),
+                    }),
+                },
+            };
+
+            writeln!(stdout, "{}", serde_json::to_string(&response)?)?;
+            stdout.flush()?;
+        }
+
         Ok(())
+    }
+
+    /// Handle a single MCP request
+    async fn handle_request(&self, request: McpRequest, tools: &[McpTool]) -> McpResponse {
+        let result = match request.method.as_str() {
+            "tools/list" => Ok(serde_json::to_value(tools).unwrap_or_default()),
+            "tools/call" => self.handle_tool_call(request.params).await,
+            _ => Err(McpError {
+                code: -32601,
+                message: format!("Method not found: {}", request.method),
+            }),
+        };
+
+        match result {
+            Ok(value) => McpResponse {
+                jsonrpc: "2.0".to_string(),
+                id: request.id,
+                result: Some(value),
+                error: None,
+            },
+            Err(error) => McpResponse {
+                jsonrpc: "2.0".to_string(),
+                id: request.id,
+                result: None,
+                error: Some(error),
+            },
+        }
+    }
+
+    /// Handle a tool call
+    async fn handle_tool_call(
+        &self,
+        params: Option<serde_json::Value>,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let params = params.ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing params".to_string(),
+        })?;
+
+        let tool_name = params["name"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing tool name".to_string(),
+        })?;
+
+        let arguments = params.get("arguments").cloned().unwrap_or_default();
+
+        match tool_name {
+            "dna_search" => self.handle_search(arguments).await,
+            "dna_get" => self.handle_get(arguments).await,
+            "dna_list" => self.handle_list(arguments).await,
+            "dna_add" => self.handle_add(arguments).await,
+            "dna_update" => self.handle_update(arguments).await,
+            "dna_remove" => self.handle_remove(arguments).await,
+            "dna_changes" => self.handle_changes(arguments).await,
+            _ => Err(McpError {
+                code: -32602,
+                message: format!("Unknown tool: {tool_name}"),
+            }),
+        }
+    }
+
+    async fn handle_search(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let query = args["query"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing query parameter".to_string(),
+        })?;
+
+        let limit = args["limit"].as_u64().map(|l| l as usize);
+        let artifact_type = args["type"]
+            .as_str()
+            .map(|t| parse_artifact_type(t))
+            .transpose()
+            .map_err(|e| McpError {
+                code: -32602,
+                message: e.to_string(),
+            })?;
+
+        let filters = SearchFilters {
+            artifact_type,
+            limit,
+            ..Default::default()
+        };
+
+        let results = self
+            .search_service
+            .search(query, filters)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::to_value(results).unwrap_or_default())
+    }
+
+    async fn handle_get(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let id = args["id"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing id parameter".to_string(),
+        })?;
+
+        let artifact = self.artifact_service.get(id).await.map_err(|e| McpError {
+            code: -32000,
+            message: e.to_string(),
+        })?;
+
+        Ok(serde_json::to_value(artifact).unwrap_or_default())
+    }
+
+    async fn handle_list(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let artifact_type = args["type"]
+            .as_str()
+            .map(|t| parse_artifact_type(t))
+            .transpose()
+            .map_err(|e| McpError {
+                code: -32602,
+                message: e.to_string(),
+            })?;
+
+        let limit = args["limit"].as_u64().map(|l| l as usize);
+
+        let filters = SearchFilters {
+            artifact_type,
+            limit,
+            ..Default::default()
+        };
+
+        let artifacts = self
+            .artifact_service
+            .list(filters)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::to_value(artifacts).unwrap_or_default())
+    }
+
+    async fn handle_add(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let artifact_type = args["type"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing type parameter".to_string(),
+        })?;
+        let artifact_type = parse_artifact_type(artifact_type).map_err(|e| McpError {
+            code: -32602,
+            message: e.to_string(),
+        })?;
+
+        let content = args["content"]
+            .as_str()
+            .ok_or_else(|| McpError {
+                code: -32602,
+                message: "Missing content parameter".to_string(),
+            })?
+            .to_string();
+
+        let format = args["format"]
+            .as_str()
+            .map(|f| match f {
+                "markdown" => ContentFormat::Markdown,
+                "yaml" => ContentFormat::Yaml,
+                "json" => ContentFormat::Json,
+                _ => ContentFormat::Markdown,
+            })
+            .unwrap_or(ContentFormat::Markdown);
+
+        let name = args["name"].as_str().map(|s| s.to_string());
+        let metadata = args["metadata"]
+            .as_object()
+            .map(|m| {
+                m.iter()
+                    .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                    .collect::<HashMap<String, String>>()
+            })
+            .unwrap_or_default();
+
+        let artifact = self
+            .artifact_service
+            .add(artifact_type, content, format, name, metadata)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::to_value(artifact).unwrap_or_default())
+    }
+
+    async fn handle_update(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let id = args["id"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing id parameter".to_string(),
+        })?;
+
+        let content = args["content"].as_str().map(|s| s.to_string());
+        let name = args["name"].as_str().map(|s| s.to_string());
+        let metadata = args["metadata"].as_object().map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| v.as_str().map(|s| (k.clone(), s.to_string())))
+                .collect::<HashMap<String, String>>()
+        });
+
+        let artifact = self
+            .artifact_service
+            .update(id, content, name, metadata)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::to_value(artifact).unwrap_or_default())
+    }
+
+    async fn handle_remove(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let id = args["id"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing id parameter".to_string(),
+        })?;
+
+        let removed = self
+            .artifact_service
+            .remove(id)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::json!({ "removed": removed }))
+    }
+
+    async fn handle_changes(
+        &self,
+        args: serde_json::Value,
+    ) -> std::result::Result<serde_json::Value, McpError> {
+        let since = args["since"].as_str().ok_or_else(|| McpError {
+            code: -32602,
+            message: "Missing since parameter".to_string(),
+        })?;
+
+        // Parse since as datetime
+        let since_dt = chrono::DateTime::parse_from_rfc3339(since)
+            .map(|dt| dt.with_timezone(&chrono::Utc))
+            .map_err(|e| McpError {
+                code: -32602,
+                message: format!("Invalid since format: {e}"),
+            })?;
+
+        let filters = SearchFilters {
+            since: Some(since_dt),
+            ..Default::default()
+        };
+
+        let artifacts = self
+            .artifact_service
+            .list(filters)
+            .await
+            .map_err(|e| McpError {
+                code: -32000,
+                message: e.to_string(),
+            })?;
+
+        Ok(serde_json::to_value(artifacts).unwrap_or_default())
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+fn parse_artifact_type(s: &str) -> Result<ArtifactType> {
+    match s.to_lowercase().as_str() {
+        "intent" => Ok(ArtifactType::Intent),
+        "invariant" => Ok(ArtifactType::Invariant),
+        "contract" => Ok(ArtifactType::Contract),
+        "algorithm" => Ok(ArtifactType::Algorithm),
+        "evaluation" => Ok(ArtifactType::Evaluation),
+        "pace" => Ok(ArtifactType::Pace),
+        "monitor" => Ok(ArtifactType::Monitor),
+        _ => anyhow::bail!("Unknown artifact type: {s}"),
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 struct McpTool {
     name: String,
     description: String,
     input_schema: serde_json::Value,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct McpCapabilities {
+    tools: Vec<McpTool>,
+}
+
+#[derive(Debug, Deserialize)]
+struct McpRequest {
+    #[allow(dead_code)]
+    jsonrpc: String,
+    id: Option<serde_json::Value>,
+    method: String,
+    params: Option<serde_json::Value>,
+}
+
+#[derive(Debug, Serialize)]
+struct McpResponse {
+    jsonrpc: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    result: Option<serde_json::Value>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<McpError>,
+}
+
+#[derive(Debug, Serialize)]
+struct McpError {
+    code: i32,
+    message: String,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{Artifact, ArtifactType, ContentFormat, SearchFilters, SearchResult};
-    use std::collections::HashMap;
+    use crate::services::{Artifact, SearchResult};
     use std::sync::Mutex;
 
     struct TestEmbedding;
 
     #[async_trait::async_trait]
-    impl EmbeddingProvider for TestEmbedding {
+    impl crate::embedding::EmbeddingProvider for TestEmbedding {
         async fn embed(&self, _text: &str) -> Result<Vec<f32>> {
             Ok(vec![0.0; 384])
         }
@@ -214,7 +577,7 @@ mod tests {
     }
 
     #[async_trait::async_trait]
-    impl Database for TestDatabase {
+    impl crate::db::Database for TestDatabase {
         async fn insert(&self, artifact: &Artifact) -> Result<()> {
             self.artifacts.lock().unwrap().push(artifact.clone());
             Ok(())
@@ -337,5 +700,22 @@ mod tests {
             .as_array()
             .unwrap()
             .contains(&serde_json::json!("query")));
+    }
+
+    #[test]
+    fn parse_artifact_type_works() {
+        assert!(matches!(
+            parse_artifact_type("intent").unwrap(),
+            ArtifactType::Intent
+        ));
+        assert!(matches!(
+            parse_artifact_type("invariant").unwrap(),
+            ArtifactType::Invariant
+        ));
+        assert!(matches!(
+            parse_artifact_type("contract").unwrap(),
+            ArtifactType::Contract
+        ));
+        assert!(parse_artifact_type("invalid").is_err());
     }
 }
