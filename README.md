@@ -291,9 +291,7 @@ Add to your Claude Code or other MCP-compatible client:
     "dna": {
       "command": "dna",
       "args": ["mcp", "stdio"],
-      "env": {
-        "DNA_PROJECT_ROOT": "/path/to/your/project"
-      }
+      "cwd": "/path/to/your/project"
     }
   }
 }
