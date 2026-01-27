@@ -1,13 +1,19 @@
-# DNA - Truth Artifact Management CLI
+<div align="center">
 
-[![CI Status](https://github.com/yourusername/dna/workflows/CI/badge.svg)](https://github.com/yourusername/dna/actions)
-[![Coverage](https://codecov.io/gh/yourusername/dna/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/dna)
-[![Crates.io](https://img.shields.io/crates/v/dna.svg)](https://crates.io/crates/dna)
+# DNA
+
+<img src=".github/logo.jpg" alt="DNA - Truth Artifact Management CLI" width="100%">
+
+[![CI Status](https://github.com/panbanda/dna/workflows/CI/badge.svg)](https://github.com/panbanda/dna/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Transform how AI agents understand your codebase** - Make intent explicit, searchable, and persistent.
+**Transform how AI agents understand your codebase** - Make intent explicit, searchable, and persistent.
 
 DNA is a powerful CLI tool for managing "truth artifacts" - authoritative statements that define what your system is and must remain, independent of implementation details. Built for AI agents and human developers working together.
+
+</div>
+
+---
 
 ## Why DNA?
 
@@ -57,25 +63,23 @@ Download the latest release for your platform:
 
 ```bash
 # Linux x86_64
-curl -LO https://github.com/yourusername/dna/releases/latest/download/dna-linux-x86_64.tar.gz
+curl -LO https://github.com/panbanda/dna/releases/latest/download/dna-linux-x86_64.tar.gz
 tar xzf dna-linux-x86_64.tar.gz
 sudo mv dna /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -LO https://github.com/yourusername/dna/releases/latest/download/dna-macos-aarch64.tar.gz
+curl -LO https://github.com/panbanda/dna/releases/latest/download/dna-macos-aarch64.tar.gz
 tar xzf dna-macos-aarch64.tar.gz
 sudo mv dna /usr/local/bin/
 
 # Windows (download and add to PATH)
-# https://github.com/yourusername/dna/releases/latest/download/dna-windows-x86_64.zip
+# https://github.com/panbanda/dna/releases/latest/download/dna-windows-x86_64.zip
 ```
 
 ### From Source
 
 ```bash
-cargo install dna
-# or
-git clone https://github.com/yourusername/dna.git
+git clone https://github.com/panbanda/dna.git
 cd dna
 cargo build --release
 ```
@@ -171,25 +175,25 @@ dna mcp stdio --include-tools list_artifacts,search_artifacts
 DNA uses a clean, layered architecture:
 
 ```
-┌─────────────────────────────────────┐
-│     Interface Layers (Thin)         │
-│  ┌──────────┐       ┌──────────┐   │
-│  │   CLI    │       │   MCP    │   │
-│  └──────────┘       └──────────┘   │
-└─────────────────────────────────────┘
-              │
-┌─────────────────────────────────────┐
-│    Services (Business Logic)        │
-│  - artifact.rs  - search.rs         │
-│  - config.rs    - types.rs          │
-└─────────────────────────────────────┘
-              │
-┌─────────────────────────────────────┐
-│      Infrastructure                 │
-│  - db/ (LanceDB)                    │
-│  - embedding/ (Local/OpenAI/Ollama) │
-│  - render/ (File system output)     │
-└─────────────────────────────────────┘
++-------------------------------------+
+|     Interface Layers (Thin)         |
+|  +----------+       +----------+    |
+|  |   CLI    |       |   MCP    |    |
+|  +----------+       +----------+    |
++-------------------------------------+
+              |
++-------------------------------------+
+|    Services (Business Logic)        |
+|  - artifact.rs  - search.rs         |
+|  - config.rs    - types.rs          |
++-------------------------------------+
+              |
++-------------------------------------+
+|      Infrastructure                 |
+|  - db/ (LanceDB)                    |
+|  - embedding/ (Local/OpenAI/Ollama) |
+|  - render/ (File system output)     |
++-------------------------------------+
 ```
 
 **Benefits**:
@@ -197,10 +201,6 @@ DNA uses a clean, layered architecture:
 - Easy to add new interfaces (REST API, gRPC)
 - Fully testable in isolation
 - Clear separation of concerns
-
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for details.
-
-## Architecture
 
 ### Service Layer (Framework-Agnostic)
 - `/src/services/` - All business logic
@@ -251,7 +251,7 @@ name = "BAAI/bge-small-en-v1.5"
 ### Building from Source
 
 ```bash
-git clone https://github.com/yourusername/dna.git
+git clone https://github.com/panbanda/dna.git
 cd dna
 cargo build --release
 ```
@@ -263,8 +263,7 @@ cargo build --release
 cargo test
 
 # Run with coverage
-cargo install cargo-tarpaulin
-cargo tarpaulin --out Html
+cargo llvm-cov --all-features
 ```
 
 ### Contributing
@@ -272,9 +271,9 @@ cargo tarpaulin --out Html
 We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 **Development Requirements**:
-- Rust 1.84+
+- Rust 1.88+
 - Pre-commit hooks: `lefthook install`
-- 95% code coverage for new code
+- 65% code coverage for new code
 - All clippy lints must pass
 
 ### Code Quality
@@ -282,11 +281,9 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guid
 DNA enforces strict quality standards:
 - **Formatting**: rustfmt
 - **Linting**: clippy (strict mode)
-- **Testing**: 95% minimum coverage
+- **Testing**: 65% minimum coverage
 - **Security**: cargo-audit, cargo-deny
 - **Documentation**: All public APIs documented
-
-See [docs/METHODOLOGY.md](docs/METHODOLOGY.md) for development methodology.
 
 ## Intent-Starter Methodology
 
@@ -309,8 +306,6 @@ DNA implements the Intent-Starter approach to software development:
 | **Evaluation** | Success metrics | "Search results in <100ms p95" |
 | **Pace** | Timing/sequence | "Retry failed jobs with exponential backoff" |
 | **Monitor** | Observability | "Log all authentication attempts" |
-
-Read more: [docs/METHODOLOGY.md](docs/METHODOLOGY.md)
 
 ## Real-World Use Cases
 
@@ -364,14 +359,12 @@ MIT License - see [LICENSE](LICENSE) for details.
 - Built with [LanceDB](https://lancedb.com/) for vector storage
 - Embeddings via [Candle](https://github.com/huggingface/candle)
 - Inspired by [Model Context Protocol](https://modelcontextprotocol.io/)
-- Developed using [SPARC methodology](https://github.com/ruvnet/claude-flow)
 
 ## Support
 
 - **Documentation**: [docs/](docs/)
-- **Issues**: [GitHub Issues](https://github.com/yourusername/dna/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/dna/discussions)
-- **Security**: See [SECURITY.md](SECURITY.md)
+- **Issues**: [GitHub Issues](https://github.com/panbanda/dna/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/panbanda/dna/discussions)
 
 ---
 

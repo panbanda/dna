@@ -28,6 +28,14 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install protoc (Ubuntu)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
+      - name: Install protoc (macOS)
+        if: runner.os == 'macOS'
+        run: brew install protobuf
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
@@ -48,6 +56,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -62,15 +73,6 @@ jobs:
       - name: Check coverage threshold (65%)
         run: cargo llvm-cov --all-features --ignore-filename-regex 'main\.rs$' --fail-under-lines 65
 
-      - name: Generate coverage report
-        run: cargo llvm-cov --all-features --ignore-filename-regex 'main\.rs$' --lcov --output-path lcov.info
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: lcov.info
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -78,6 +80,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -94,15 +99,18 @@ jobs:
         run: cargo clippy --all-targets --all-features
 
   msrv:
-    name: MSRV (1.84.0)
+    name: MSRV (1.92.0)
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler
+
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@1.84.0
+        uses: dtolnay/rust-toolchain@1.92.0
 
       - name: Cache cargo registry and build
         uses: Swatinem/rust-cache@v2

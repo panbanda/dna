@@ -2,7 +2,8 @@ use super::{schema, Database};
 use crate::services::{Artifact, ArtifactType, ContentFormat, SearchFilters, SearchResult};
 use anyhow::{Context, Result};
 use arrow_array::{
-    cast::AsArray, Array, FixedSizeListArray, Float32Array, RecordBatch, RecordBatchIterator, TimestampMillisecondArray,
+    cast::AsArray, Array, FixedSizeListArray, Float32Array, RecordBatch, RecordBatchIterator,
+    TimestampMillisecondArray,
 };
 use chrono::{TimeZone, Utc};
 use futures::TryStreamExt;

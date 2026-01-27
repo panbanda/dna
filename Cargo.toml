@@ -2,12 +2,12 @@
 name = "dna"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.84"
+rust-version = "1.92"
 authors = ["DNA Team"]
 description = "Truth artifact management CLI with vector search for AI agents and developers"
 license = "MIT"
-repository = "https://github.com/yourusername/dna"
-homepage = "https://github.com/yourusername/dna"
+repository = "https://github.com/panbanda/dna"
+homepage = "https://github.com/panbanda/dna"
 documentation = "https://docs.rs/dna"
 keywords = ["cli", "vector-search", "ai", "mcp", "artifacts"]
 categories = ["command-line-utilities", "development-tools"]
