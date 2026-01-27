@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.3](https://github.com/panbanda/dna/compare/dna-v0.1.2...dna-v0.1.3) (2026-01-27)
+
+
+### Bug Fixes
+
+* restore full LTO and add swap space for ARM Linux builds ([8a33b7c](https://github.com/panbanda/dna/commit/8a33b7cf5a1a5bf737c71508e44d842e91376d92))
+* use macos-15-intel for x86_64 builds and thin LTO for faster CI ([8e7f1b0](https://github.com/panbanda/dna/commit/8e7f1b08efcbcb057b404c0338730c8c83677e02))
+
+
+### Performance Improvements
+
+* use arduino/setup-protoc for faster CI builds ([0df8a3b](https://github.com/panbanda/dna/commit/0df8a3ba886c432cf792d5e72c5ffe8701364500))
+
 ## [0.1.2](https://github.com/panbanda/dna/compare/dna-v0.1.1...dna-v0.1.2) (2026-01-27)
 
 
