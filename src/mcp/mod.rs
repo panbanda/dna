@@ -7,7 +7,9 @@ use std::sync::Arc;
 
 /// MCP Server for DNA
 pub struct McpServer {
+    #[allow(dead_code)]
     artifact_service: ArtifactService,
+    #[allow(dead_code)]
     search_service: SearchService,
     include_tools: Option<Vec<String>>,
     exclude_tools: Option<Vec<String>>,
