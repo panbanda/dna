@@ -1,0 +1,57 @@
+# Clippy Configuration for DNA CLI
+# Strict linting rules to prevent common LLM code generation issues
+
+# Cognitive complexity threshold
+cognitive-complexity-threshold = 15
+
+# Array length threshold for excessive arrays
+array-size-threshold = 16
+
+# Vector initialization threshold
+vec-box-size-threshold = 4096
+
+# Large error threshold
+type-complexity-threshold = 250
+
+# Single char binding threshold
+single-char-binding-names-threshold = 4
+
+# Documentation requirements
+missing-docs-in-private-items = false
+
+# LLM-specific issue prevention
+# These settings prevent common issues from AI-generated code:
+
+# Prevent overly complex functions (LLMs often generate complex nested logic)
+too-many-lines-threshold = 100
+
+# Prevent deeply nested structures (LLMs can create deeply nested if/match)
+excessive-nesting-threshold = 5
+
+# Prevent large structs (LLMs sometimes generate bloated data structures)
+struct-excessive-bools-threshold = 3
+
+# Prevent function with too many arguments (LLMs often add many parameters)
+too-many-arguments-threshold = 7
+
+# String matching improvements
+# LLMs often use inefficient string operations
+trivial-copy-size-limit = 128
+
+# Performance-critical settings
+# Prevent common performance antipatterns from generated code
+unnecessary-box-threshold = 128
+enum-variant-size-threshold = 200
+
+# Safety and correctness
+# Enforce safe patterns that LLMs might skip
+allow-mixed-uninlined-format-args = false
+suppress-restriction-lint-in-const = false
+
+# Documentation enforcement
+# Ensure LLMs don't skip documentation
+doc-valid-idents = ["DNA", "MCP", "CLI", "LanceDB", "API"]
+
+# Await holding patterns
+# Prevent incorrect async usage (common in LLM code)
+large-futures-threshold = 16384

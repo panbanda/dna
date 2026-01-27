@@ -1,0 +1,20 @@
+# Cargo configuration for DNA CLI tests
+
+[target.'cfg(all())']
+rustflags = ["-C", "instrument-coverage"]
+
+[build]
+# Use all available CPU cores for building tests
+jobs = 4
+
+[test]
+# Show test output even for passing tests when requested
+# Run with: cargo test -- --nocapture
+
+[alias]
+# Convenient test aliases
+test-unit = "test --lib --bins"
+test-integration = "test --test '*'"
+test-all = "test --workspace"
+test-coverage = "tarpaulin --out Html --output-dir coverage"
+test-fast = "test --release -- --test-threads=4"

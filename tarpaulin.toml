@@ -1,0 +1,35 @@
+# Tarpaulin configuration for code coverage
+
+[report]
+out-type = ["Html", "Xml", "Lcov"]
+output-dir = "coverage"
+
+[run]
+# Timeout for tests in seconds
+timeout = 300
+
+# Include all crates in the workspace
+all-features = false
+no-default-features = false
+
+# Coverage targets
+coverage-options = "NoCode"
+
+# Exclude files/directories from coverage
+exclude = [
+    "*/tests/*",
+    "*/examples/*",
+]
+
+# Count hits for each line
+count = true
+
+# Include tests in coverage
+run-types = ["Tests"]
+
+# Target coverage percentage
+fail-under = 95.0
+
+[output]
+verbose = true
+color = "Auto"

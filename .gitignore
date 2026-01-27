@@ -1,0 +1,29 @@
+# Rust
+/target
+Cargo.lock
+**/*.rs.bk
+*.pdb
+
+# DNA project files
+.dna/
+dna/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+*.tmp
+*.log
+
+# Coverage profiling
+*.profraw
+coverage/
+tarpaulin-report.html
