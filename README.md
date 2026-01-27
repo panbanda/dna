@@ -12,8 +12,6 @@
 
 DNA is a CLI for capturing the essential identity of your system - the decisions, constraints, and guarantees that define what it *is*, independent of how it's currently implemented. Like biological DNA, these truth artifacts persist while everything around them changes: frameworks evolve, teams turn over, code gets rewritten. The blueprint survives.
 
-More than storage, DNA provides a **natural language interface to your system**. Ask questions in plain English - "why do we hash passwords this way?" or "what are our API guarantees?" - and semantic search surfaces the authoritative answers. Your system becomes queryable at the level of intent, not just implementation.
-
 </div>
 
 ---
@@ -61,10 +59,10 @@ dna search "authentication methods"
 
 ## Key Features
 
-- **Natural Language Interface**: Query your system's identity in plain English - semantic search finds answers by meaning, not keywords
 - **7 Artifact Types**: intent, invariant, contract, algorithm, evaluation, pace, monitor
-- **Flexible Embedding**: Local (Candle), OpenAI, or Ollama providers for vector search
-- **MCP Integration**: Native Model Context Protocol server exposes artifacts to AI agents
+- **Semantic Search**: Vector-powered search finds artifacts by meaning, not keywords
+- **Flexible Embedding**: Local (Candle), OpenAI, or Ollama providers
+- **MCP Integration**: Native Model Context Protocol server for AI agents
 - **Project-Scoped**: Each project is independent, no global configuration
 - **Cross-Platform**: Linux, macOS, Windows support with native binaries
 
@@ -392,7 +390,7 @@ DNA makes the essential knowledge explicit and discoverable. Onboarding becomes:
 
 AI agents are powerful executors, but they lack judgment about what matters.
 
-DNA gives them a natural language interface to your system's identity. Instead of inferring intent from code patterns, an agent can query: "What invariants apply to authentication?" and get authoritative answers. It can generate code that respects constraints it didn't create, honor contracts it wasn't told about, and understand purpose it couldn't infer from implementation alone. The agent becomes a collaborator that speaks your system's language.
+DNA gives them guardrails. When an agent has access to your truth artifacts, it can generate code that respects invariants it didn't create, honor contracts it wasn't told about, and understand intent it couldn't infer from code alone. The agent becomes a collaborator that operates within boundaries you've defined.
 
 ### For Long-Lived Systems
 
