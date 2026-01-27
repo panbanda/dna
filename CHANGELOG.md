@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/panbanda/dna/compare/dna-v0.1.3...dna-v0.1.4) (2026-01-27)
+
+
+### Bug Fixes
+
+* use /mnt for swap file to avoid conflicts ([201d2a1](https://github.com/panbanda/dna/commit/201d2a1f4eab11c62649b498ddf6068fd4f9ccd1))
+
 ## [0.1.3](https://github.com/panbanda/dna/compare/dna-v0.1.2...dna-v0.1.3) (2026-01-27)
 
 
