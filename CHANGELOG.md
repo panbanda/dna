@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.5](https://github.com/panbanda/dna/compare/dna-v0.1.4...dna-v0.1.5) (2026-01-27)
+
+
+### Bug Fixes
+
+* limit cargo jobs to reduce memory usage during LTO linking ([ac03ae3](https://github.com/panbanda/dna/commit/ac03ae3a02ac9384a04274f9a41f627b0b479989))
+
+
+### Performance Improvements
+
+* use thin LTO for faster builds with lower memory usage ([aeef7b8](https://github.com/panbanda/dna/commit/aeef7b844eab9154adbfeec3dd752225febc299f))
+
 ## [0.1.4](https://github.com/panbanda/dna/compare/dna-v0.1.3...dna-v0.1.4) (2026-01-27)
 
 
