@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/panbanda/dna/compare/dna-v0.1.1...dna-v0.1.2) (2026-01-27)
+
+
+### Bug Fixes
+
+* install protoc in release workflow ([3025a0b](https://github.com/panbanda/dna/commit/3025a0b61c2a66f8671b6f6e633fe22faba79e2c))
+
 ## [0.1.1](https://github.com/panbanda/dna/compare/dna-v0.1.0...dna-v0.1.1) (2026-01-27)
 
 
