@@ -66,6 +66,138 @@ dna search "authentication methods"
 - **Project-Scoped**: Each project is independent, no global configuration
 - **Cross-Platform**: Linux, macOS, Windows support with native binaries
 
+## The DNA Approach
+
+Every living system has two layers: the genetic code that defines what it is, and the physical expression of that code. Software works the same way - but we've been ignoring the genetic layer.
+
+### The Core Insight
+
+Code is not your system. Code is just the current expression of your system.
+
+The actual system - its purpose, its constraints, its promises - exists at a deeper level. That's what DNA captures: the genotype that persists while the phenotype (code) evolves.
+
+When you encode this identity as first-class artifacts:
+- Implementations become disposable. Rewrite with confidence because you know what must be preserved.
+- AI agents can generate code that respects constraints they didn't create.
+- New team members understand not just *what* the system does, but *why*.
+- The system's identity survives the people who shaped it.
+
+### The Seven Artifact Types
+
+DNA provides seven artifact types - think of them as different genes that encode different aspects of your system's identity. Each captures a distinct kind of truth.
+
+#### Intent
+
+**What the system is for.**
+
+Intents capture the normative "why" behind features and capabilities. They're not user stories or requirements - they're statements of purpose that explain what value the system provides and to whom.
+
+```bash
+dna intent add "Support real-time collaboration to enable distributed teams to work together without friction"
+```
+
+An intent answers: *Why does this exist? What problem does it solve? Who benefits?*
+
+When an intent no longer reflects reality, that's not a documentation bug - it's an identity crisis that demands explicit resolution.
+
+#### Invariant
+
+**What must always be true.**
+
+Invariants are the load-bearing walls of your system. They define properties that cannot be violated without fundamentally breaking the system's guarantees. Every invariant is a line in the sand.
+
+```bash
+dna invariant add "User passwords are never stored in plaintext or reversible encryption"
+```
+
+Invariants are not aspirational. If something is an invariant, violating it - even temporarily, even in tests - is a system failure. If you find yourself wanting to "temporarily" break an invariant, you've misclassified it.
+
+#### Contract
+
+**What behavior is guaranteed.**
+
+Contracts define the promises your system makes to its consumers - whether those are users, APIs, or other services. They specify observable behavior that callers can depend on.
+
+```bash
+dna contract add "POST /api/auth returns 401 for invalid credentials, never 500"
+```
+
+A contract violation is a breaking change, regardless of what your versioning says. Contracts force you to be explicit about what's guaranteed versus what's incidental.
+
+#### Algorithm
+
+**How critical operations work.**
+
+Algorithms capture the specific approaches used for operations where the method matters. These aren't implementation details - they're deliberate choices with security, performance, or correctness implications.
+
+```bash
+dna algorithm add "Password hashing uses bcrypt with cost factor >= 12"
+```
+
+Algorithms answer: *Why this approach and not another? What properties does it guarantee?* They prevent well-meaning refactors from accidentally downgrading security or correctness.
+
+#### Evaluation
+
+**How success is measured.**
+
+Evaluations define the authoritative criteria for determining whether the system is acceptable. They're not metrics dashboards - they're the specific thresholds that separate "working" from "broken."
+
+```bash
+dna evaluation add "Search results return in <100ms at p95 under normal load"
+```
+
+When an evaluation fails, the system is unacceptable - regardless of whether all tests pass or the code looks correct. Evaluations outrank opinions.
+
+#### Pace
+
+**How fast things can change.**
+
+Pace artifacts define the velocity constraints for different parts of the system. Some things can change freely. Others require ceremony. Some should change rarely and deliberately.
+
+```bash
+dna pace add "Schema migrations require review from database team and 48-hour staging validation"
+```
+
+Pace is about permission, not guidance. It answers: *Who can change this? How fast? With what oversight?* It prevents the slow erosion of critical guarantees through incremental "improvements."
+
+#### Monitor
+
+**What must be observable.**
+
+Monitors define the observability requirements - what events must be captured, what metrics must be tracked, what visibility is non-negotiable for operating the system.
+
+```bash
+dna monitor add "All authentication attempts logged with timestamp, IP, and outcome"
+```
+
+Monitors aren't logging best practices. They're the specific observability guarantees that operators can depend on for debugging, security, and compliance.
+
+## Real-World Use Cases
+
+### For Solo Developers
+
+Your future self is a stranger who inherits your codebase with zero context.
+
+DNA lets you leave behind not just code, but the reasoning that shaped it. When you return to a project after months away, semantic search surfaces the decisions that matter - why the authentication works this way, what performance constraints drove the architecture, which simplifications would break things.
+
+### For Teams
+
+New team members don't need to absorb years of context through osmosis.
+
+DNA makes the essential knowledge explicit and discoverable. Onboarding becomes: "Search for intents related to what you're building. Read the invariants before you touch anything. Understand the contracts before you change APIs." The knowledge that used to live in senior engineers' heads becomes institutional memory that scales.
+
+### For AI-Human Collaboration
+
+AI agents are powerful executors, but they lack judgment about what matters.
+
+DNA gives them guardrails. When an agent has access to your truth artifacts, it can generate code that respects invariants it didn't create, honor contracts it wasn't told about, and understand intent it couldn't infer from code alone. The agent becomes a collaborator that operates within boundaries you've defined.
+
+### For Long-Lived Systems
+
+Most software lives longer than any individual's tenure on the team.
+
+DNA captures the decisions that must survive personnel changes, framework migrations, and architectural evolution. When you need to rewrite a service, the truth artifacts tell you what must be preserved. The implementation is disposable; the identity persists.
+
 ## Installation
 
 ### Homebrew (Recommended)
@@ -265,138 +397,6 @@ DNA enforces strict quality standards:
 - **Testing**: 65% minimum coverage
 - **Security**: cargo-audit, cargo-deny
 - **Documentation**: All public APIs documented
-
-## The DNA Approach
-
-Every living system has two layers: the genetic code that defines what it is, and the physical expression of that code. Software works the same way - but we've been ignoring the genetic layer.
-
-### The Core Insight
-
-Code is not your system. Code is just the current expression of your system.
-
-The actual system - its purpose, its constraints, its promises - exists at a deeper level. That's what DNA captures: the genotype that persists while the phenotype (code) evolves.
-
-When you encode this identity as first-class artifacts:
-- Implementations become disposable. Rewrite with confidence because you know what must be preserved.
-- AI agents can generate code that respects constraints they didn't create.
-- New team members understand not just *what* the system does, but *why*.
-- The system's identity survives the people who shaped it.
-
-### The Seven Artifact Types
-
-DNA provides seven artifact types - think of them as different genes that encode different aspects of your system's identity. Each captures a distinct kind of truth.
-
-#### Intent
-
-**What the system is for.**
-
-Intents capture the normative "why" behind features and capabilities. They're not user stories or requirements - they're statements of purpose that explain what value the system provides and to whom.
-
-```bash
-dna intent add "Support real-time collaboration to enable distributed teams to work together without friction"
-```
-
-An intent answers: *Why does this exist? What problem does it solve? Who benefits?*
-
-When an intent no longer reflects reality, that's not a documentation bug - it's an identity crisis that demands explicit resolution.
-
-#### Invariant
-
-**What must always be true.**
-
-Invariants are the load-bearing walls of your system. They define properties that cannot be violated without fundamentally breaking the system's guarantees. Every invariant is a line in the sand.
-
-```bash
-dna invariant add "User passwords are never stored in plaintext or reversible encryption"
-```
-
-Invariants are not aspirational. If something is an invariant, violating it - even temporarily, even in tests - is a system failure. If you find yourself wanting to "temporarily" break an invariant, you've misclassified it.
-
-#### Contract
-
-**What behavior is guaranteed.**
-
-Contracts define the promises your system makes to its consumers - whether those are users, APIs, or other services. They specify observable behavior that callers can depend on.
-
-```bash
-dna contract add "POST /api/auth returns 401 for invalid credentials, never 500"
-```
-
-A contract violation is a breaking change, regardless of what your versioning says. Contracts force you to be explicit about what's guaranteed versus what's incidental.
-
-#### Algorithm
-
-**How critical operations work.**
-
-Algorithms capture the specific approaches used for operations where the method matters. These aren't implementation details - they're deliberate choices with security, performance, or correctness implications.
-
-```bash
-dna algorithm add "Password hashing uses bcrypt with cost factor >= 12"
-```
-
-Algorithms answer: *Why this approach and not another? What properties does it guarantee?* They prevent well-meaning refactors from accidentally downgrading security or correctness.
-
-#### Evaluation
-
-**How success is measured.**
-
-Evaluations define the authoritative criteria for determining whether the system is acceptable. They're not metrics dashboards - they're the specific thresholds that separate "working" from "broken."
-
-```bash
-dna evaluation add "Search results return in <100ms at p95 under normal load"
-```
-
-When an evaluation fails, the system is unacceptable - regardless of whether all tests pass or the code looks correct. Evaluations outrank opinions.
-
-#### Pace
-
-**How fast things can change.**
-
-Pace artifacts define the velocity constraints for different parts of the system. Some things can change freely. Others require ceremony. Some should change rarely and deliberately.
-
-```bash
-dna pace add "Schema migrations require review from database team and 48-hour staging validation"
-```
-
-Pace is about permission, not guidance. It answers: *Who can change this? How fast? With what oversight?* It prevents the slow erosion of critical guarantees through incremental "improvements."
-
-#### Monitor
-
-**What must be observable.**
-
-Monitors define the observability requirements - what events must be captured, what metrics must be tracked, what visibility is non-negotiable for operating the system.
-
-```bash
-dna monitor add "All authentication attempts logged with timestamp, IP, and outcome"
-```
-
-Monitors aren't logging best practices. They're the specific observability guarantees that operators can depend on for debugging, security, and compliance.
-
-## Real-World Use Cases
-
-### For Solo Developers
-
-Your future self is a stranger who inherits your codebase with zero context.
-
-DNA lets you leave behind not just code, but the reasoning that shaped it. When you return to a project after months away, semantic search surfaces the decisions that matter - why the authentication works this way, what performance constraints drove the architecture, which simplifications would break things.
-
-### For Teams
-
-New team members don't need to absorb years of context through osmosis.
-
-DNA makes the essential knowledge explicit and discoverable. Onboarding becomes: "Search for intents related to what you're building. Read the invariants before you touch anything. Understand the contracts before you change APIs." The knowledge that used to live in senior engineers' heads becomes institutional memory that scales.
-
-### For AI-Human Collaboration
-
-AI agents are powerful executors, but they lack judgment about what matters.
-
-DNA gives them guardrails. When an agent has access to your truth artifacts, it can generate code that respects invariants it didn't create, honor contracts it wasn't told about, and understand intent it couldn't infer from code alone. The agent becomes a collaborator that operates within boundaries you've defined.
-
-### For Long-Lived Systems
-
-Most software lives longer than any individual's tenure on the team.
-
-DNA captures the decisions that must survive personnel changes, framework migrations, and architectural evolution. When you need to rewrite a service, the truth artifacts tell you what must be preserved. The implementation is disposable; the identity persists.
 
 ## Project Status
 
