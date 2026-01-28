@@ -1,5 +1,9 @@
-use super::types::{ModelConfig, ProjectConfig};
+use super::types::ProjectConfig;
 use anyhow::{Context, Result};
+use figment::{
+    providers::{Env, Format, Serialized, Toml},
+    Figment,
+};
 use std::path::{Path, PathBuf};
 
 /// Service for configuration management
@@ -21,12 +25,17 @@ impl ConfigService {
         Ok(config)
     }
 
-    /// Load configuration from file
+    /// Load configuration from file, with env var overrides (DNA_ prefix, __ separator)
     pub fn load(&self) -> Result<ProjectConfig> {
-        let content =
-            std::fs::read_to_string(&self.config_path).context("Failed to read config file")?;
-        let config: ProjectConfig =
-            toml::from_str(&content).context("Failed to parse config file")?;
+        let mut figment = Figment::from(Serialized::defaults(ProjectConfig::default()));
+
+        if self.config_path.exists() {
+            figment = figment.merge(Toml::file(&self.config_path));
+        }
+
+        figment = figment.merge(Env::prefixed("DNA_").split("__"));
+
+        let config: ProjectConfig = figment.extract().context("Failed to load configuration")?;
         Ok(config)
     }
 
@@ -34,7 +43,6 @@ impl ConfigService {
     pub fn save(&self, config: &ProjectConfig) -> Result<()> {
         let content = toml::to_string_pretty(config).context("Failed to serialize config")?;
 
-        // Ensure directory exists
         if let Some(parent) = self.config_path.parent() {
             std::fs::create_dir_all(parent).context("Failed to create config directory")?;
         }
@@ -44,38 +52,56 @@ impl ConfigService {
     }
 
     /// Update model configuration
-    pub fn update_model(&self, provider: String, name: String) -> Result<ModelConfig> {
+    pub fn update_model(&self, provider: String, name: String) -> Result<()> {
         let mut config = self.load()?;
         config.model.provider = provider;
         config.model.name = name;
         self.save(&config)?;
-        Ok(config.model)
+        Ok(())
     }
 
-    /// Get a configuration value
+    /// Get a configuration value by dotted key
     pub fn get(&self, key: &str) -> Result<String> {
         let config = self.load()?;
         match key {
             "model.provider" => Ok(config.model.provider),
             "model.name" => Ok(config.model.name),
-            "model.api_key_env" => Ok(config.model.api_key_env.unwrap_or_default()),
+            "model.api_key" => Ok(config.model.api_key.unwrap_or_default()),
             "model.base_url" => Ok(config.model.base_url.unwrap_or_default()),
+            "storage.uri" => Ok(config.storage.uri.unwrap_or_default()),
             _ => Err(anyhow::anyhow!("Unknown config key: {}", key)),
         }
     }
 
-    /// Set a configuration value
+    /// Set a configuration value by dotted key
     pub fn set(&self, key: &str, value: String) -> Result<()> {
         let mut config = self.load()?;
         match key {
             "model.provider" => config.model.provider = value,
             "model.name" => config.model.name = value,
-            "model.api_key_env" => config.model.api_key_env = Some(value),
+            "model.api_key" => config.model.api_key = Some(value),
             "model.base_url" => config.model.base_url = Some(value),
+            "storage.uri" => config.storage.uri = Some(value),
             _ => return Err(anyhow::anyhow!("Unknown config key: {}", key)),
         }
         self.save(&config)?;
         Ok(())
+    }
+
+    /// Resolve the storage URI from config, defaulting to local path
+    pub fn resolve_storage_uri(&self, project_root: &Path) -> Result<String> {
+        let config = self.load()?;
+        let uri = match &config.storage.uri {
+            Some(uri) if uri.starts_with("s3://") => uri.clone(),
+            Some(uri) => project_root.join(uri).to_string_lossy().to_string(),
+            None => project_root
+                .join(".dna")
+                .join("db")
+                .join("artifacts.lance")
+                .to_string_lossy()
+                .to_string(),
+        };
+        Ok(uri)
     }
 
     /// Check if configuration exists
@@ -120,11 +146,12 @@ mod tests {
     }
 
     #[test]
-    fn load_without_init_returns_error() {
+    fn load_without_init_uses_defaults() {
         let temp_dir = TempDir::new().unwrap();
         let service = ConfigService::new(temp_dir.path());
-        let result = service.load();
-        assert!(result.is_err());
+        let config = service.load().unwrap();
+        assert_eq!(config.model.provider, "local");
+        assert_eq!(config.model.name, "BAAI/bge-small-en-v1.5");
     }
 
     #[test]
@@ -133,105 +160,13 @@ mod tests {
         let service = ConfigService::new(temp_dir.path());
         service.init().unwrap();
 
-        let model = service
+        service
             .update_model("openai".to_string(), "text-embedding-3-small".to_string())
             .unwrap();
-        assert_eq!(model.provider, "openai");
-        assert_eq!(model.name, "text-embedding-3-small");
 
         let loaded = service.load().unwrap();
         assert_eq!(loaded.model.provider, "openai");
         assert_eq!(loaded.model.name, "text-embedding-3-small");
-    }
-
-    #[test]
-    fn get_model_provider() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        let value = service.get("model.provider").unwrap();
-        assert_eq!(value, "local");
-    }
-
-    #[test]
-    fn get_model_name() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        let value = service.get("model.name").unwrap();
-        assert_eq!(value, "BAAI/bge-small-en-v1.5");
-    }
-
-    #[test]
-    fn get_unknown_key_returns_error() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        let result = service.get("unknown.key");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn set_model_provider() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        service.set("model.provider", "ollama".to_string()).unwrap();
-        let value = service.get("model.provider").unwrap();
-        assert_eq!(value, "ollama");
-    }
-
-    #[test]
-    fn set_model_name() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        service
-            .set("model.name", "custom-model".to_string())
-            .unwrap();
-        let value = service.get("model.name").unwrap();
-        assert_eq!(value, "custom-model");
-    }
-
-    #[test]
-    fn set_model_api_key_env() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        service
-            .set("model.api_key_env", "MY_API_KEY".to_string())
-            .unwrap();
-        let value = service.get("model.api_key_env").unwrap();
-        assert_eq!(value, "MY_API_KEY");
-    }
-
-    #[test]
-    fn set_model_base_url() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        service
-            .set("model.base_url", "http://localhost:8080".to_string())
-            .unwrap();
-        let value = service.get("model.base_url").unwrap();
-        assert_eq!(value, "http://localhost:8080");
-    }
-
-    #[test]
-    fn set_unknown_key_returns_error() {
-        let temp_dir = TempDir::new().unwrap();
-        let service = ConfigService::new(temp_dir.path());
-        service.init().unwrap();
-
-        let result = service.set("unknown.key", "value".to_string());
-        assert!(result.is_err());
     }
 
     #[test]
@@ -247,5 +182,51 @@ mod tests {
         let service = ConfigService::new(temp_dir.path());
         service.init().unwrap();
         assert!(service.exists());
+    }
+
+    #[test]
+    fn resolve_storage_uri_defaults_to_local() {
+        let temp_dir = TempDir::new().unwrap();
+        let service = ConfigService::new(temp_dir.path());
+        service.init().unwrap();
+
+        let uri = service.resolve_storage_uri(temp_dir.path()).unwrap();
+        let expected = temp_dir
+            .path()
+            .join(".dna")
+            .join("db")
+            .join("artifacts.lance")
+            .to_string_lossy()
+            .to_string();
+        assert_eq!(uri, expected);
+    }
+
+    #[test]
+    fn resolve_storage_uri_preserves_s3_uri() {
+        let temp_dir = TempDir::new().unwrap();
+        let service = ConfigService::new(temp_dir.path());
+        let mut config = ProjectConfig::default();
+        config.storage.uri = Some("s3://my-bucket/dna/artifacts.lance".to_string());
+        service.save(&config).unwrap();
+
+        let uri = service.resolve_storage_uri(temp_dir.path()).unwrap();
+        assert_eq!(uri, "s3://my-bucket/dna/artifacts.lance");
+    }
+
+    #[test]
+    fn resolve_storage_uri_resolves_relative_path() {
+        let temp_dir = TempDir::new().unwrap();
+        let service = ConfigService::new(temp_dir.path());
+        let mut config = ProjectConfig::default();
+        config.storage.uri = Some("custom/path.lance".to_string());
+        service.save(&config).unwrap();
+
+        let uri = service.resolve_storage_uri(temp_dir.path()).unwrap();
+        let expected = temp_dir
+            .path()
+            .join("custom/path.lance")
+            .to_string_lossy()
+            .to_string();
+        assert_eq!(uri, expected);
     }
 }

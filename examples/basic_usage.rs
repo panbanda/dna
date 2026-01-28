@@ -23,7 +23,7 @@ async fn main() -> Result<()> {
     let db_path = temp_dir.path().join("example.lance");
 
     println!("1. Initializing LanceDB at {:?}", db_path);
-    let db = LanceDatabase::new(&db_path).await?;
+    let db = LanceDatabase::new(db_path.to_str().unwrap()).await?;
     db.init().await?;
     println!("   Database initialized successfully!\n");
 

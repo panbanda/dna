@@ -19,10 +19,12 @@ pub async fn create_provider(config: &ModelConfig) -> Result<Arc<dyn EmbeddingPr
             Ok(Arc::new(provider))
         },
         "openai" => {
-            let api_key_env = config.api_key_env.as_deref().unwrap_or("OPENAI_API_KEY");
+            let api_key = config
+                .api_key
+                .as_deref()
+                .context("OpenAI provider requires api_key to be set")?;
             let base_url = config.base_url.as_deref();
-            let provider = openai::OpenAIEmbedding::new(&config.name, api_key_env, base_url)
-                .context("Failed to initialize OpenAI embedding provider")?;
+            let provider = openai::OpenAIEmbedding::new(&config.name, api_key, base_url);
             Ok(Arc::new(provider))
         },
         "ollama" => {
@@ -47,7 +49,7 @@ mod tests {
         let config = ModelConfig {
             provider: "local".to_string(),
             name: "BAAI/bge-small-en-v1.5".to_string(),
-            api_key_env: None,
+            api_key: None,
             base_url: None,
         };
         let provider = create_provider(&config).await.unwrap();
@@ -60,7 +62,7 @@ mod tests {
         let config = ModelConfig {
             provider: "ollama".to_string(),
             name: "nomic-embed-text".to_string(),
-            api_key_env: None,
+            api_key: None,
             base_url: None,
         };
         let provider = create_provider(&config).await.unwrap();
@@ -73,7 +75,7 @@ mod tests {
         let config = ModelConfig {
             provider: "ollama".to_string(),
             name: "model".to_string(),
-            api_key_env: None,
+            api_key: None,
             base_url: Some("http://custom:8080".to_string()),
         };
         let provider = create_provider(&config).await.unwrap();
@@ -85,7 +87,7 @@ mod tests {
         let config = ModelConfig {
             provider: "unknown".to_string(),
             name: "model".to_string(),
-            api_key_env: None,
+            api_key: None,
             base_url: None,
         };
         let result = create_provider(&config).await;
@@ -97,7 +99,7 @@ mod tests {
         let config = ModelConfig {
             provider: "openai".to_string(),
             name: "text-embedding-3-small".to_string(),
-            api_key_env: Some("NONEXISTENT_KEY_12345".to_string()),
+            api_key: None,
             base_url: None,
         };
         let result = create_provider(&config).await;

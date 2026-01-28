@@ -59,7 +59,7 @@ async fn main() -> Result<()> {
     let db_path = temp_dir.path().join("service_example.lance");
 
     println!("1. Initializing services...");
-    let db = Arc::new(LanceDatabase::new(&db_path).await?);
+    let db = Arc::new(LanceDatabase::new(db_path.to_str().unwrap()).await?);
     db.init().await?;
 
     let embedding: Arc<dyn EmbeddingProvider> = Arc::new(MockEmbedding::new());
