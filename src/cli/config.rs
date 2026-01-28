@@ -50,12 +50,11 @@ pub async fn execute(args: ConfigArgs) -> Result<()> {
                     return Err(anyhow::anyhow!("Model must be in format provider:model"));
                 }
 
-                let model =
-                    config_service.update_model(parts[0].to_string(), parts[1].to_string())?;
+                config_service.update_model(parts[0].to_string(), parts[1].to_string())?;
 
                 println!("Updated model configuration:");
-                println!("  Provider: {}", model.provider);
-                println!("  Model: {}", model.name);
+                println!("  Provider: {}", parts[0]);
+                println!("  Model: {}", parts[1]);
                 println!(
                     "\nNote: Run 'dna reindex' to re-embed existing artifacts with the new model."
                 );

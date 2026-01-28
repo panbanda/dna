@@ -15,37 +15,39 @@ use tokio::sync::RwLock;
 
 const TABLE_NAME: &str = "artifacts";
 
-/// LanceDB implementation
+/// LanceDB implementation supporting local paths and S3 URIs
 pub struct LanceDatabase {
-    path: std::path::PathBuf,
+    uri: String,
     connection: RwLock<Option<lancedb::Connection>>,
 }
 
 impl LanceDatabase {
-    /// Create a new LanceDB instance
-    pub async fn new(path: impl AsRef<Path>) -> Result<Self> {
-        let path = path.as_ref().to_path_buf();
-
-        // Ensure directory exists
-        if let Some(parent) = path.parent() {
-            tokio::fs::create_dir_all(parent)
-                .await
-                .context("Failed to create database directory")?;
+    /// Create a new LanceDB instance from a URI (local path or s3://...)
+    pub async fn new(uri: &str) -> Result<Self> {
+        if !uri.starts_with("s3://") {
+            let path = Path::new(uri);
+            if let Some(parent) = path.parent() {
+                tokio::fs::create_dir_all(parent)
+                    .await
+                    .context("Failed to create database directory")?;
+            }
         }
 
         Ok(Self {
-            path,
+            uri: uri.to_string(),
             connection: RwLock::new(None),
         })
     }
 
     /// Initialize the database
     pub async fn init(&self) -> Result<()> {
-        tokio::fs::create_dir_all(&self.path)
-            .await
-            .context("Failed to create database directory")?;
+        if !self.uri.starts_with("s3://") {
+            tokio::fs::create_dir_all(&self.uri)
+                .await
+                .context("Failed to create database directory")?;
+        }
 
-        let db = lancedb::connect(self.path.to_str().unwrap())
+        let db = lancedb::connect(&self.uri)
             .execute()
             .await
             .context("Failed to connect to LanceDB")?;
@@ -72,8 +74,7 @@ impl LanceDatabase {
         }
         drop(conn);
 
-        // Initialize if not already done
-        let db = lancedb::connect(self.path.to_str().unwrap())
+        let db = lancedb::connect(&self.uri)
             .execute()
             .await
             .context("Failed to connect to LanceDB")?;
@@ -397,7 +398,7 @@ mod tests {
     async fn new_creates_parent_directory() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("subdir").join("test.lance");
-        let _db = LanceDatabase::new(&db_path).await.unwrap();
+        let _db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         assert!(temp_dir.path().join("subdir").exists());
     }
 
@@ -405,7 +406,7 @@ mod tests {
     async fn init_creates_database_directory() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
         assert!(db_path.exists());
     }
@@ -415,7 +416,7 @@ mod tests {
     async fn insert_then_get_returns_artifact() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let artifact = create_test_artifact("hello world", create_embedding(0.1));
@@ -439,7 +440,7 @@ mod tests {
     async fn insert_then_list_includes_artifact() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let artifact = create_test_artifact("list test", create_embedding(0.2));
@@ -463,7 +464,7 @@ mod tests {
     async fn list_filters_by_artifact_type() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let mut intent = create_test_artifact("intent content", create_embedding(0.1));
@@ -498,7 +499,7 @@ mod tests {
     async fn update_changes_artifact_content() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let mut artifact = create_test_artifact("original", create_embedding(0.1));
@@ -520,7 +521,7 @@ mod tests {
     async fn delete_removes_artifact() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let artifact = create_test_artifact("to delete", create_embedding(0.1));
@@ -547,7 +548,7 @@ mod tests {
     async fn delete_returns_false_for_nonexistent() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let deleted = db.delete("nonexistent-id").await.unwrap();
@@ -562,7 +563,7 @@ mod tests {
     async fn get_returns_none_for_nonexistent() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let result = db.get("nonexistent").await.unwrap();
@@ -574,7 +575,7 @@ mod tests {
     async fn search_finds_similar_vectors() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         // Insert artifacts with different embeddings
@@ -605,7 +606,7 @@ mod tests {
     async fn search_respects_limit() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         // Insert multiple artifacts
@@ -629,7 +630,7 @@ mod tests {
     async fn list_respects_limit() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         for i in 0..5 {
@@ -652,7 +653,7 @@ mod tests {
     async fn empty_database_list_returns_empty() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let results = db.list(SearchFilters::default()).await.unwrap();
@@ -664,7 +665,7 @@ mod tests {
     async fn insert_multiple_artifacts() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         for i in 0..3 {
@@ -682,7 +683,7 @@ mod tests {
     async fn list_filters_by_since_timestamp() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         // Insert an artifact
@@ -716,7 +717,7 @@ mod tests {
     async fn artifact_metadata_is_preserved() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
-        let db = LanceDatabase::new(&db_path).await.unwrap();
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
         let mut metadata = HashMap::new();

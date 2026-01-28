@@ -30,19 +30,16 @@ pub struct OpenAIEmbedding {
 
 impl OpenAIEmbedding {
     /// Create a new OpenAI embedding provider
-    pub fn new(model_id: &str, api_key_env: &str, base_url: Option<&str>) -> Result<Self> {
-        let api_key = std::env::var(api_key_env)
-            .with_context(|| format!("Environment variable {} not set", api_key_env))?;
-
-        Ok(Self {
+    pub fn new(model_id: &str, api_key: &str, base_url: Option<&str>) -> Self {
+        Self {
             model_id: model_id.to_string(),
-            api_key,
+            api_key: api_key.to_string(),
             base_url: base_url
                 .unwrap_or(DEFAULT_BASE_URL)
                 .trim_end_matches('/')
                 .to_string(),
             client: reqwest::Client::new(),
-        })
+        }
     }
 
     /// Get dimensions for known OpenAI models
@@ -109,71 +106,49 @@ impl EmbeddingProvider for OpenAIEmbedding {
 mod tests {
     use super::*;
 
-    fn setup_env() {
-        std::env::set_var("TEST_OPENAI_KEY", "test-key");
-    }
-
     #[test]
     fn dimensions_text_embedding_3_small() {
-        setup_env();
-        let provider =
-            OpenAIEmbedding::new("text-embedding-3-small", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("text-embedding-3-small", "test-key", None);
         assert_eq!(provider.dimensions(), 1536);
     }
 
     #[test]
     fn dimensions_text_embedding_3_large() {
-        setup_env();
-        let provider =
-            OpenAIEmbedding::new("text-embedding-3-large", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("text-embedding-3-large", "test-key", None);
         assert_eq!(provider.dimensions(), 3072);
     }
 
     #[test]
     fn dimensions_text_embedding_ada_002() {
-        setup_env();
-        let provider =
-            OpenAIEmbedding::new("text-embedding-ada-002", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("text-embedding-ada-002", "test-key", None);
         assert_eq!(provider.dimensions(), 1536);
     }
 
     #[test]
     fn dimensions_unknown_model_defaults_to_1536() {
-        setup_env();
-        let provider = OpenAIEmbedding::new("unknown-model", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("unknown-model", "test-key", None);
         assert_eq!(provider.dimensions(), 1536);
     }
 
     #[test]
     fn custom_base_url_strips_trailing_slash() {
-        setup_env();
         let provider = OpenAIEmbedding::new(
             "text-embedding-3-small",
-            "TEST_OPENAI_KEY",
+            "test-key",
             Some("https://custom.api.example.com/v1/"),
-        )
-        .unwrap();
+        );
         assert_eq!(provider.base_url, "https://custom.api.example.com/v1");
     }
 
     #[test]
     fn default_base_url() {
-        setup_env();
-        let provider =
-            OpenAIEmbedding::new("text-embedding-3-small", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("text-embedding-3-small", "test-key", None);
         assert_eq!(provider.base_url, DEFAULT_BASE_URL);
     }
 
     #[test]
     fn model_id_returns_configured_value() {
-        setup_env();
-        let provider = OpenAIEmbedding::new("my-model", "TEST_OPENAI_KEY", None).unwrap();
+        let provider = OpenAIEmbedding::new("my-model", "test-key", None);
         assert_eq!(provider.model_id(), "my-model");
-    }
-
-    #[test]
-    fn missing_api_key_env_returns_error() {
-        let result = OpenAIEmbedding::new("model", "NONEXISTENT_KEY_12345", None);
-        assert!(result.is_err());
     }
 }

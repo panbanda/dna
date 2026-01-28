@@ -356,6 +356,31 @@ After changing providers, re-index existing artifacts:
 dna reindex
 ```
 
+### Storage Backend
+
+By default, DNA stores artifacts locally in `.dna/db/artifacts.lance`. To use S3 for shared storage across multiple users or agents:
+
+```toml
+[storage]
+uri = "s3://my-bucket/dna/artifacts.lance"
+```
+
+S3 credentials are resolved via the standard AWS credential chain (environment variables, `~/.aws/credentials`, IAM roles).
+
+### Environment Variable Overrides
+
+Any configuration value can be overridden with environment variables using the `DNA_` prefix and `__` (double underscore) as a section separator:
+
+| Config Key | Environment Variable |
+|---|---|
+| `model.provider` | `DNA_MODEL__PROVIDER` |
+| `model.name` | `DNA_MODEL__NAME` |
+| `model.api_key` | `DNA_MODEL__API_KEY` |
+| `model.base_url` | `DNA_MODEL__BASE_URL` |
+| `storage.uri` | `DNA_STORAGE__URI` |
+
+Environment variables take precedence over values in `config.toml`.
+
 ## Development
 
 ### Building from Source

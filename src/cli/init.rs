@@ -41,14 +41,14 @@ pub async fn execute(args: InitArgs) -> Result<()> {
     };
 
     // Initialize database
-    let db_path = dna_dir.join("db").join("artifacts.lance");
-    let db = crate::db::lance::LanceDatabase::new(&db_path).await?;
+    let storage_uri = config_service.resolve_storage_uri(&project_root)?;
+    let db = crate::db::lance::LanceDatabase::new(&storage_uri).await?;
     db.init().await?;
 
     println!("Initialized DNA project at {}", project_root.display());
     println!("  Provider: {}", config.model.provider);
     println!("  Model: {}", config.model.name);
-    println!("  Database: {}", db_path.display());
+    println!("  Storage: {}", storage_uri);
 
     Ok(())
 }

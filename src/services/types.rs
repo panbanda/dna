@@ -171,7 +171,7 @@ pub struct ModelConfig {
     pub provider: String,
     pub name: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub api_key_env: Option<String>,
+    pub api_key: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub base_url: Option<String>,
 }
@@ -181,16 +181,27 @@ impl Default for ModelConfig {
         Self {
             provider: "local".to_string(),
             name: "BAAI/bge-small-en-v1.5".to_string(),
-            api_key_env: None,
+            api_key: None,
             base_url: None,
         }
     }
+}
+
+/// Configuration for storage backend
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct StorageConfig {
+    /// Storage URI: local path or s3://bucket/path
+    /// Default: ".dna/artifacts.lance" (relative to project root)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub uri: Option<String>,
 }
 
 /// Project configuration
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProjectConfig {
     pub model: ModelConfig,
+    #[serde(default)]
+    pub storage: StorageConfig,
 }
 
 #[cfg(test)]
@@ -536,8 +547,18 @@ mod tests {
             let config = ModelConfig::default();
             assert_eq!(config.provider, "local");
             assert_eq!(config.name, "BAAI/bge-small-en-v1.5");
-            assert!(config.api_key_env.is_none());
+            assert!(config.api_key.is_none());
             assert!(config.base_url.is_none());
+        }
+    }
+
+    mod storage_config {
+        use super::*;
+
+        #[test]
+        fn default_has_no_uri() {
+            let config = StorageConfig::default();
+            assert!(config.uri.is_none());
         }
     }
 

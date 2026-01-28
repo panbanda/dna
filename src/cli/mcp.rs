@@ -25,8 +25,8 @@ pub async fn execute(args: McpArgs) -> Result<()> {
     }
 
     let config = config_service.load()?;
-    let db_path = project_root.join(".dna").join("db").join("artifacts.lance");
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&db_path).await?);
+    let storage_uri = config_service.resolve_storage_uri(&project_root)?;
+    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
     let embedding = crate::embedding::create_provider(&config.model).await?;
 
     // Parse tool filters
