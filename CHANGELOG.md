@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.6](https://github.com/panbanda/dna/compare/dna-v0.1.5...dna-v0.1.6) (2026-01-28)
+
+
+### Features
+
+* implement local Candle embeddings and CLI improvements ([af5275f](https://github.com/panbanda/dna/commit/af5275f6e369161eb7f3784d6d8267f906d8ea15))
+* implement local Candle embeddings and CLI improvements ([fb55f1d](https://github.com/panbanda/dna/commit/fb55f1d09bcaa7c31165110b878a3577564c433f))
+
 ## [0.1.5](https://github.com/panbanda/dna/compare/dna-v0.1.4...dna-v0.1.5) (2026-01-27)
 
 
