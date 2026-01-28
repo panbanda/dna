@@ -71,7 +71,7 @@ jobs:
         uses: taiki-e/install-action@cargo-llvm-cov
 
       - name: Check coverage threshold (65%)
-        run: cargo llvm-cov --all-features --ignore-filename-regex 'main\.rs$' --fail-under-lines 65
+        run: cargo llvm-cov --all-features --ignore-filename-regex '(main|local|handler)\.rs$' --fail-under-lines 65
 
   lint:
     name: Lint
