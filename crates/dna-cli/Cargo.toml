@@ -1,0 +1,39 @@
+[package]
+name = "dna-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Truth artifact management CLI with vector search for AI agents and developers"
+keywords = ["cli", "vector-search", "ai", "mcp", "artifacts"]
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "dna"
+path = "src/main.rs"
+
+[dependencies]
+# Internal
+dna = { workspace = true }
+
+# CLI
+clap = { workspace = true }
+
+# Serialization
+serde_json = { workspace = true }
+
+# Utilities
+chrono = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Error handling
+anyhow = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }

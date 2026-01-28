@@ -1,3 +1,5 @@
+mod cli;
+
 use anyhow::Result;
 use clap::Parser;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -11,8 +13,8 @@ async fn main() -> Result<()> {
         .init();
 
     // Parse CLI
-    let cli = dna::cli::Cli::parse();
+    let cli = cli::Cli::parse();
 
     // Execute command
-    dna::cli::execute(cli).await
+    cli::execute(cli).await
 }

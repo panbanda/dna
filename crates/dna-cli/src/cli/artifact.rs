@@ -1,7 +1,7 @@
 use super::parse_metadata;
-use crate::services::{ArtifactService, ArtifactType, ConfigService, ContentFormat};
 use anyhow::Result;
 use clap::{Args, Subcommand};
+use dna::services::{ArtifactService, ArtifactType, ConfigService, ContentFormat};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -90,8 +90,8 @@ pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<
 
     // Create database and embedding provider
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db, embedding);
 
@@ -158,7 +158,7 @@ pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<
                 })
                 .transpose()?;
 
-            let search_filters = crate::services::SearchFilters {
+            let search_filters = dna::services::SearchFilters {
                 artifact_type: Some(artifact_type),
                 metadata: metadata_filters,
                 since: since_dt,

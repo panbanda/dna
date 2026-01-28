@@ -83,23 +83,23 @@ pub async fn execute(cli: Cli) -> Result<()> {
     match cli.command {
         Commands::Init(args) => init::execute(args).await,
         Commands::Intent(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Intent).await
+            artifact::execute(args, dna::services::ArtifactType::Intent).await
         },
         Commands::Invariant(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Invariant).await
+            artifact::execute(args, dna::services::ArtifactType::Invariant).await
         },
         Commands::Contract(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Contract).await
+            artifact::execute(args, dna::services::ArtifactType::Contract).await
         },
         Commands::Algorithm(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Algorithm).await
+            artifact::execute(args, dna::services::ArtifactType::Algorithm).await
         },
         Commands::Evaluation(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Evaluation).await
+            artifact::execute(args, dna::services::ArtifactType::Evaluation).await
         },
-        Commands::Pace(args) => artifact::execute(args, crate::services::ArtifactType::Pace).await,
+        Commands::Pace(args) => artifact::execute(args, dna::services::ArtifactType::Pace).await,
         Commands::Monitor(args) => {
-            artifact::execute(args, crate::services::ArtifactType::Monitor).await
+            artifact::execute(args, dna::services::ArtifactType::Monitor).await
         },
         Commands::Search(args) => search::execute_search(args).await,
         Commands::List(args) => search::execute_list(args).await,

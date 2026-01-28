@@ -1,6 +1,6 @@
-use crate::services::ConfigService;
 use anyhow::Result;
 use clap::Args;
+use dna::services::ConfigService;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -31,7 +31,7 @@ pub async fn execute(args: InitArgs) -> Result<()> {
             return Err(anyhow::anyhow!("Model must be in format provider:model"));
         }
 
-        let mut config = crate::services::ProjectConfig::default();
+        let mut config = dna::services::ProjectConfig::default();
         config.model.provider = parts[0].to_string();
         config.model.name = parts[1].to_string();
         config_service.save(&config)?;
@@ -42,7 +42,7 @@ pub async fn execute(args: InitArgs) -> Result<()> {
 
     // Initialize database
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = crate::db::lance::LanceDatabase::new(&storage_uri).await?;
+    let db = dna::db::lance::LanceDatabase::new(&storage_uri).await?;
     db.init().await?;
 
     println!("Initialized DNA project at {}", project_root.display());

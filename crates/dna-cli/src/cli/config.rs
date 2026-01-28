@@ -1,6 +1,6 @@
-use crate::services::ConfigService;
 use anyhow::Result;
 use clap::{Args, Subcommand};
+use dna::services::ConfigService;
 use std::path::PathBuf;
 
 #[derive(Args)]

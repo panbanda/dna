@@ -1,37 +1,20 @@
-[package]
-name = "dna"
+[workspace]
+members = ["crates/dna", "crates/dna-cli", "crates/dna-server"]
+resolver = "2"
+
+[workspace.package]
 version = "0.1.6"
 edition = "2021"
 rust-version = "1.91"
 authors = ["DNA Team"]
-description = "Truth artifact management CLI with vector search for AI agents and developers"
 license = "MIT"
 repository = "https://github.com/panbanda/dna"
 homepage = "https://github.com/panbanda/dna"
-documentation = "https://docs.rs/dna"
-keywords = ["cli", "vector-search", "ai", "mcp", "artifacts"]
-categories = ["command-line-utilities", "development-tools"]
-readme = "README.md"
-exclude = [
-    ".github/",
-    "coverage/",
-    "target/",
-    "*.profraw",
-]
 
-[[bin]]
-name = "dna"
-path = "src/main.rs"
+[workspace.dependencies]
+# Internal
+dna = { path = "crates/dna", version = "0.1.6" }
 
-[[example]]
-name = "basic_usage"
-path = "examples/basic_usage.rs"
-
-[[example]]
-name = "service_usage"
-path = "examples/service_usage.rs"
-
-[dependencies]
 # CLI
 clap = { version = "4.5", features = ["derive", "env"] }
 
@@ -81,7 +64,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 # MCP Server
 serde-jsonlines = "0.6"
 
-[dev-dependencies]
+# Dev dependencies
 tempfile = "3.14"
 tokio-test = "0.4"
 mockall = "0.13"

@@ -1,7 +1,7 @@
 use super::parse_metadata;
-use crate::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
 use anyhow::Result;
 use clap::Args;
+use dna::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -67,8 +67,8 @@ pub async fn execute_search(args: SearchArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let search_service = SearchService::new(db, embedding);
 
@@ -110,8 +110,8 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db, embedding);
 
@@ -155,8 +155,8 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db, embedding);
 
@@ -193,8 +193,8 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db.clone(), embedding.clone());
     let search_service = SearchService::new(db, embedding);
