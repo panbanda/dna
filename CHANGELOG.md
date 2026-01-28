@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.7](https://github.com/panbanda/dna/compare/dna-v0.1.6...dna-v0.1.7) (2026-01-28)
+
+
+### Features
+
+* add S3 storage support and figment-based config ([2cd9877](https://github.com/panbanda/dna/commit/2cd9877b85c50156b092acf9a3e15047bec0e34f))
+* add S3 storage support and figment-based config ([881e74b](https://github.com/panbanda/dna/commit/881e74bdcd5b60cf179a69601263e9322943c496))
+
 ## [0.1.6](https://github.com/panbanda/dna/compare/dna-v0.1.5...dna-v0.1.6) (2026-01-28)
 
 
