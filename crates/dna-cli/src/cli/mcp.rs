@@ -1,6 +1,8 @@
 use anyhow::Result;
 use clap::Args;
+use dna::mcp::DnaToolHandler;
 use dna::services::ConfigService;
+use rmcp::ServiceExt;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -42,9 +44,13 @@ pub async fn execute(args: McpArgs) -> Result<()> {
             .collect::<Vec<_>>()
     });
 
-    // Start MCP server
-    let server = dna::mcp::McpServer::new(db, embedding, include_tools, exclude_tools);
-    server.run().await?;
+    // Log to stderr for stdio servers
+    eprintln!("Starting DNA MCP server...");
+
+    // Create handler and start server with stdio transport
+    let handler = DnaToolHandler::new(db, embedding, include_tools, exclude_tools);
+    let service = handler.serve(rmcp::transport::io::stdio()).await?;
+    service.waiting().await?;
 
     Ok(())
 }

@@ -1,3 +1,7 @@
+pub mod handler;
+
+pub use handler::DnaToolHandler;
+
 use crate::db::Database;
 use crate::embedding::EmbeddingProvider;
 use crate::services::{ArtifactService, ArtifactType, ContentFormat, SearchFilters, SearchService};
