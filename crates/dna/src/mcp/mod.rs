@@ -87,20 +87,21 @@ impl McpServer {
                     "properties": {
                         "type": {"type": "string"},
                         "filter": {"type": "object"},
-                        "since": {"type": "string"},
+                        "after": {"type": "string"},
+                        "before": {"type": "string"},
                         "limit": {"type": "integer"}
                     }
                 }),
             },
             McpTool {
                 name: "dna_changes".to_string(),
-                description: "Artifacts modified since timestamp/git-ref".to_string(),
+                description: "Artifacts modified in time range".to_string(),
                 input_schema: serde_json::json!({
                     "type": "object",
                     "properties": {
-                        "since": {"type": "string"}
-                    },
-                    "required": ["since"]
+                        "after": {"type": "string"},
+                        "before": {"type": "string"}
+                    }
                 }),
             },
             McpTool {
@@ -333,8 +334,32 @@ impl McpServer {
 
         let limit = args["limit"].as_u64().map(|l| l as usize);
 
+        let after = args["after"]
+            .as_str()
+            .map(|s| {
+                chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
+            })
+            .transpose()
+            .map_err(|e| McpError {
+                code: -32602,
+                message: format!("Invalid after format: {e}"),
+            })?;
+
+        let before = args["before"]
+            .as_str()
+            .map(|s| {
+                chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
+            })
+            .transpose()
+            .map_err(|e| McpError {
+                code: -32602,
+                message: format!("Invalid before format: {e}"),
+            })?;
+
         let filters = SearchFilters {
             artifact_type,
+            after,
+            before,
             limit,
             ..Default::default()
         };
@@ -458,21 +483,31 @@ impl McpServer {
         &self,
         args: serde_json::Value,
     ) -> std::result::Result<serde_json::Value, McpError> {
-        let since = args["since"].as_str().ok_or_else(|| McpError {
-            code: -32602,
-            message: "Missing since parameter".to_string(),
-        })?;
-
-        // Parse since as datetime
-        let since_dt = chrono::DateTime::parse_from_rfc3339(since)
-            .map(|dt| dt.with_timezone(&chrono::Utc))
+        let after = args["after"]
+            .as_str()
+            .map(|s| {
+                chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
+            })
+            .transpose()
             .map_err(|e| McpError {
                 code: -32602,
-                message: format!("Invalid since format: {e}"),
+                message: format!("Invalid after format: {e}"),
+            })?;
+
+        let before = args["before"]
+            .as_str()
+            .map(|s| {
+                chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
+            })
+            .transpose()
+            .map_err(|e| McpError {
+                code: -32602,
+                message: format!("Invalid before format: {e}"),
             })?;
 
         let filters = SearchFilters {
-            since: Some(since_dt),
+            after,
+            before,
             ..Default::default()
         };
 

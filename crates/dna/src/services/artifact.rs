@@ -127,15 +127,6 @@ impl ArtifactService {
             .context("Failed to list artifacts")
     }
 
-    /// Get artifacts changed since a timestamp
-    pub async fn changes(&self, since: chrono::DateTime<chrono::Utc>) -> Result<Vec<Artifact>> {
-        let filters = SearchFilters {
-            since: Some(since),
-            ..Default::default()
-        };
-        self.list(filters).await
-    }
-
     /// Reindex all artifacts with current embedding model
     pub async fn reindex(&self) -> Result<usize> {
         let artifacts = self.list(SearchFilters::default()).await?;
@@ -423,13 +414,17 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn changes_returns_artifacts_modified_since() {
+    async fn list_with_time_range_filters() {
         let db = Arc::new(TestDatabase::new());
         let embedding = Arc::new(TestEmbedding::new("test-model", vec![0.1]));
         let service = ArtifactService::new(db, embedding);
 
-        let since = chrono::Utc::now();
-        let result = service.changes(since).await.unwrap();
+        let after = chrono::Utc::now();
+        let filters = SearchFilters {
+            after: Some(after),
+            ..Default::default()
+        };
+        let result = service.list(filters).await.unwrap();
         assert!(result.is_empty());
     }
 

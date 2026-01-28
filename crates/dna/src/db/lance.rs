@@ -272,10 +272,17 @@ impl Database for LanceDatabase {
             filter_parts.push(format!("type = '{}'", artifact_type));
         }
 
-        if let Some(since) = &filters.since {
+        if let Some(after) = &filters.after {
             filter_parts.push(format!(
                 "updated_at >= arrow_cast({}, 'Timestamp(Millisecond, None)')",
-                since.timestamp_millis()
+                after.timestamp_millis()
+            ));
+        }
+
+        if let Some(before) = &filters.before {
+            filter_parts.push(format!(
+                "updated_at < arrow_cast({}, 'Timestamp(Millisecond, None)')",
+                before.timestamp_millis()
             ));
         }
 
@@ -334,10 +341,17 @@ impl Database for LanceDatabase {
             filter_parts.push(format!("type = '{}'", artifact_type));
         }
 
-        if let Some(since) = &filters.since {
+        if let Some(after) = &filters.after {
             filter_parts.push(format!(
                 "updated_at >= arrow_cast({}, 'Timestamp(Millisecond, None)')",
-                since.timestamp_millis()
+                after.timestamp_millis()
+            ));
+        }
+
+        if let Some(before) = &filters.before {
+            filter_parts.push(format!(
+                "updated_at < arrow_cast({}, 'Timestamp(Millisecond, None)')",
+                before.timestamp_millis()
             ));
         }
 
@@ -678,9 +692,9 @@ mod tests {
         assert_eq!(results.len(), 3, "Should have 3 artifacts");
     }
 
-    // TDD: List filters by since timestamp
+    // TDD: List filters by after timestamp
     #[tokio::test]
-    async fn list_filters_by_since_timestamp() {
+    async fn list_filters_by_after_timestamp() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
         let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
@@ -690,10 +704,10 @@ mod tests {
         let artifact = create_test_artifact("old content", create_embedding(0.1));
         db.insert(&artifact).await.unwrap();
 
-        // Query with since in the future - should return empty
+        // Query with after in the future - should return empty
         let future_time = chrono::Utc::now() + chrono::Duration::hours(1);
         let filters = SearchFilters {
-            since: Some(future_time),
+            after: Some(future_time),
             ..Default::default()
         };
         let results = db.list(filters).await.unwrap();
@@ -702,14 +716,87 @@ mod tests {
             "No artifacts should be newer than future time"
         );
 
-        // Query with since in the past - should return the artifact
+        // Query with after in the past - should return the artifact
         let past_time = chrono::Utc::now() - chrono::Duration::hours(1);
         let filters = SearchFilters {
-            since: Some(past_time),
+            after: Some(past_time),
             ..Default::default()
         };
         let results = db.list(filters).await.unwrap();
         assert_eq!(results.len(), 1, "Artifact should be newer than past time");
+    }
+
+    // TDD: List filters by before timestamp
+    #[tokio::test]
+    async fn list_filters_by_before_timestamp() {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.lance");
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
+        db.init().await.unwrap();
+
+        // Insert an artifact
+        let artifact = create_test_artifact("old content", create_embedding(0.1));
+        db.insert(&artifact).await.unwrap();
+
+        // Query with before in the past - should return empty
+        let past_time = chrono::Utc::now() - chrono::Duration::hours(1);
+        let filters = SearchFilters {
+            before: Some(past_time),
+            ..Default::default()
+        };
+        let results = db.list(filters).await.unwrap();
+        assert!(
+            results.is_empty(),
+            "No artifacts should be older than past time"
+        );
+
+        // Query with before in the future - should return the artifact
+        let future_time = chrono::Utc::now() + chrono::Duration::hours(1);
+        let filters = SearchFilters {
+            before: Some(future_time),
+            ..Default::default()
+        };
+        let results = db.list(filters).await.unwrap();
+        assert_eq!(
+            results.len(),
+            1,
+            "Artifact should be older than future time"
+        );
+    }
+
+    // TDD: List filters by time range
+    #[tokio::test]
+    async fn list_filters_by_time_range() {
+        let temp_dir = TempDir::new().unwrap();
+        let db_path = temp_dir.path().join("test.lance");
+        let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
+        db.init().await.unwrap();
+
+        // Insert an artifact
+        let artifact = create_test_artifact("content", create_embedding(0.1));
+        db.insert(&artifact).await.unwrap();
+
+        // Query with after and before surrounding the artifact time
+        let past_time = chrono::Utc::now() - chrono::Duration::hours(1);
+        let future_time = chrono::Utc::now() + chrono::Duration::hours(1);
+        let filters = SearchFilters {
+            after: Some(past_time),
+            before: Some(future_time),
+            ..Default::default()
+        };
+        let results = db.list(filters).await.unwrap();
+        assert_eq!(results.len(), 1, "Artifact should be in time range");
+
+        // Query with time range excluding the artifact
+        let far_past = chrono::Utc::now() - chrono::Duration::hours(2);
+        let near_past = chrono::Utc::now() - chrono::Duration::hours(1);
+        let filters = SearchFilters {
+            after: Some(far_past),
+            before: Some(near_past),
+            ..Default::default()
+        };
+        let results = db.list(filters).await.unwrap();
+        assert!(results.is_empty(), "Artifact should not be in time range");
     }
 
     // TDD: Artifact metadata is preserved

@@ -66,9 +66,13 @@ enum ArtifactCommands {
         #[arg(long = "filter")]
         filters: Vec<String>,
 
-        /// Show only artifacts since timestamp
+        /// Show only artifacts updated after timestamp
         #[arg(long)]
-        since: Option<String>,
+        after: Option<String>,
+
+        /// Show only artifacts updated before timestamp
+        #[arg(long)]
+        before: Option<String>,
 
         /// Limit number of results
         #[arg(long)]
@@ -147,11 +151,18 @@ pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<
 
         ArtifactCommands::List {
             filters,
-            since,
+            after,
+            before,
             limit,
         } => {
             let metadata_filters = parse_metadata(&filters)?;
-            let since_dt = since
+            let after_dt = after
+                .as_ref()
+                .map(|s| {
+                    chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
+                })
+                .transpose()?;
+            let before_dt = before
                 .as_ref()
                 .map(|s| {
                     chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
@@ -161,7 +172,8 @@ pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<
             let search_filters = dna::services::SearchFilters {
                 artifact_type: Some(artifact_type),
                 metadata: metadata_filters,
-                since: since_dt,
+                after: after_dt,
+                before: before_dt,
                 limit,
             };
 
