@@ -61,9 +61,6 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# MCP Server
-serde-jsonlines = "0.6"
-
 # Dev dependencies
 tempfile = "3.14"
 tokio-test = "0.4"
