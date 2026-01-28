@@ -7,7 +7,7 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Utc};
-use dna::services::{ArtifactType, ContentFormat, SearchFilters};
+use dna::services::{ArtifactType, ContentFormat, SearchFilters, ServiceError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
@@ -212,18 +212,14 @@ async fn update_artifact(
         .await
     {
         Ok(artifact) => Json(artifact).into_response(),
-        Err(e) => {
-            let msg = e.to_string();
-            if msg.contains("not found") {
-                error_response(axum::http::StatusCode::NOT_FOUND, "not_found", &msg)
-            } else {
-                error_response(
-                    axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-                    "internal_error",
-                    &msg,
-                )
-            }
+        Err(ServiceError::NotFound(msg)) => {
+            error_response(axum::http::StatusCode::NOT_FOUND, "not_found", &msg)
         },
+        Err(e) => error_response(
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "internal_error",
+            &e.to_string(),
+        ),
     }
 }
 

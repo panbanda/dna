@@ -1,4 +1,5 @@
 use super::types::*;
+use super::ServiceError;
 use crate::db::Database;
 use crate::embedding::EmbeddingProvider;
 use anyhow::{Context, Result};
@@ -65,12 +66,12 @@ impl ArtifactService {
         content: Option<String>,
         name: Option<String>,
         metadata: Option<HashMap<String, String>>,
-    ) -> Result<Artifact> {
+    ) -> Result<Artifact, ServiceError> {
         // Get existing artifact
         let mut artifact = self
             .get(id)
             .await?
-            .ok_or_else(|| anyhow::anyhow!("Artifact not found: {}", id))?;
+            .ok_or_else(|| ServiceError::NotFound(format!("Artifact '{}' not found", id)))?;
 
         // Update fields
         let mut needs_reembed = false;

@@ -14,7 +14,6 @@ pub struct AppState {
     pub embedding: Arc<dyn EmbeddingProvider>,
     pub artifact_service: Arc<ArtifactService>,
     pub search_service: Arc<SearchService>,
-    pub config: ProjectConfig,
 }
 
 impl AppState {
@@ -44,7 +43,6 @@ impl AppState {
             embedding,
             artifact_service,
             search_service,
-            config,
         })
     }
 }
