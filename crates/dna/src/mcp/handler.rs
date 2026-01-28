@@ -479,3 +479,321 @@ fn default_limit() -> Option<usize> {
 fn default_format() -> ContentFormat {
     ContentFormat::Markdown
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::services::{Artifact, SearchResult};
+    use anyhow::Result;
+    use std::sync::Mutex;
+
+    struct TestEmbedding;
+
+    #[async_trait::async_trait]
+    impl EmbeddingProvider for TestEmbedding {
+        async fn embed(&self, _text: &str) -> Result<Vec<f32>> {
+            Ok(vec![0.1, 0.2, 0.3])
+        }
+
+        async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>> {
+            Ok(texts.iter().map(|_| vec![0.1, 0.2, 0.3]).collect())
+        }
+
+        fn model_id(&self) -> &str {
+            "test-model"
+        }
+
+        fn dimensions(&self) -> usize {
+            3
+        }
+    }
+
+    struct TestDatabase {
+        artifacts: Mutex<HashMap<String, Artifact>>,
+    }
+
+    impl TestDatabase {
+        fn new() -> Self {
+            Self {
+                artifacts: Mutex::new(HashMap::new()),
+            }
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl Database for TestDatabase {
+        async fn insert(&self, artifact: &Artifact) -> Result<()> {
+            self.artifacts
+                .lock()
+                .unwrap()
+                .insert(artifact.id.clone(), artifact.clone());
+            Ok(())
+        }
+
+        async fn get(&self, id: &str) -> Result<Option<Artifact>> {
+            Ok(self.artifacts.lock().unwrap().get(id).cloned())
+        }
+
+        async fn update(&self, artifact: &Artifact) -> Result<()> {
+            self.artifacts
+                .lock()
+                .unwrap()
+                .insert(artifact.id.clone(), artifact.clone());
+            Ok(())
+        }
+
+        async fn delete(&self, id: &str) -> Result<bool> {
+            Ok(self.artifacts.lock().unwrap().remove(id).is_some())
+        }
+
+        async fn list(&self, _filters: SearchFilters) -> Result<Vec<Artifact>> {
+            Ok(self.artifacts.lock().unwrap().values().cloned().collect())
+        }
+
+        async fn search(
+            &self,
+            _query_embedding: &[f32],
+            _filters: SearchFilters,
+        ) -> Result<Vec<SearchResult>> {
+            let artifacts: Vec<_> = self.artifacts.lock().unwrap().values().cloned().collect();
+            Ok(artifacts
+                .into_iter()
+                .map(|a| SearchResult {
+                    artifact: a,
+                    score: 0.9,
+                })
+                .collect())
+        }
+    }
+
+    fn test_handler() -> DnaToolHandler {
+        let db: Arc<dyn Database> = Arc::new(TestDatabase::new());
+        let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
+        DnaToolHandler::new(db, embedding, None, None)
+    }
+
+    #[test]
+    fn is_tool_available_no_filters() {
+        let handler = test_handler();
+        assert!(handler.is_tool_available("dna_search"));
+        assert!(handler.is_tool_available("dna_add"));
+    }
+
+    #[test]
+    fn is_tool_available_include_filter() {
+        let db: Arc<dyn Database> = Arc::new(TestDatabase::new());
+        let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
+        let handler = DnaToolHandler::new(db, embedding, Some(vec!["search".to_string()]), None);
+        assert!(handler.is_tool_available("dna_search"));
+        assert!(!handler.is_tool_available("dna_add"));
+    }
+
+    #[test]
+    fn is_tool_available_exclude_filter() {
+        let db: Arc<dyn Database> = Arc::new(TestDatabase::new());
+        let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
+        let handler = DnaToolHandler::new(db, embedding, None, Some(vec!["remove".to_string()]));
+        assert!(handler.is_tool_available("dna_search"));
+        assert!(!handler.is_tool_available("dna_remove"));
+    }
+
+    #[tokio::test]
+    async fn dna_add_creates_artifact() {
+        let handler = test_handler();
+        let request = AddRequest {
+            artifact_type: ArtifactType::Intent,
+            content: "test content".to_string(),
+            format: ContentFormat::Markdown,
+            name: Some("test".to_string()),
+            metadata: HashMap::new(),
+        };
+
+        let result = handler.dna_add(request).await.unwrap();
+        assert_eq!(result.is_error, Some(false));
+        assert!(!result.content.is_empty());
+    }
+
+    #[tokio::test]
+    async fn dna_get_returns_not_found() {
+        let handler = test_handler();
+        let request = GetRequest {
+            id: "nonexistent".to_string(),
+        };
+
+        let result = handler.dna_get(request).await.unwrap();
+        assert_eq!(result.is_error, Some(true));
+    }
+
+    #[tokio::test]
+    async fn dna_get_returns_artifact() {
+        let handler = test_handler();
+
+        // Add first
+        let add_request = AddRequest {
+            artifact_type: ArtifactType::Intent,
+            content: "get me".to_string(),
+            format: ContentFormat::Markdown,
+            name: None,
+            metadata: HashMap::new(),
+        };
+        let add_result = handler.dna_add(add_request).await.unwrap();
+        let added: serde_json::Value =
+            serde_json::from_str(&add_result.content[0].as_text().unwrap().text).unwrap();
+        let id = added["id"].as_str().unwrap().to_string();
+
+        // Get it
+        let get_request = GetRequest { id };
+        let result = handler.dna_get(get_request).await.unwrap();
+        assert_eq!(result.is_error, Some(false));
+    }
+
+    #[tokio::test]
+    async fn dna_list_returns_artifacts() {
+        let handler = test_handler();
+
+        handler
+            .dna_add(AddRequest {
+                artifact_type: ArtifactType::Intent,
+                content: "one".to_string(),
+                format: ContentFormat::Markdown,
+                name: None,
+                metadata: HashMap::new(),
+            })
+            .await
+            .unwrap();
+
+        let result = handler
+            .dna_list(ListRequest {
+                artifact_type: None,
+                after: None,
+                before: None,
+                limit: None,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.is_error, Some(false));
+        let text = &result.content[0].as_text().unwrap().text;
+        let parsed: Vec<serde_json::Value> = serde_json::from_str(text).unwrap();
+        assert_eq!(parsed.len(), 1);
+    }
+
+    #[tokio::test]
+    async fn dna_search_returns_results() {
+        let handler = test_handler();
+
+        handler
+            .dna_add(AddRequest {
+                artifact_type: ArtifactType::Intent,
+                content: "searchable".to_string(),
+                format: ContentFormat::Markdown,
+                name: None,
+                metadata: HashMap::new(),
+            })
+            .await
+            .unwrap();
+
+        let result = handler
+            .dna_search(SearchRequest {
+                query: "searchable".to_string(),
+                artifact_type: None,
+                limit: Some(10),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.is_error, Some(false));
+    }
+
+    #[tokio::test]
+    async fn dna_remove_nonexistent() {
+        let handler = test_handler();
+        let result = handler
+            .dna_remove(RemoveRequest {
+                id: "nonexistent".to_string(),
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.is_error, Some(false));
+        let text = &result.content[0].as_text().unwrap().text;
+        assert!(text.contains("false"));
+    }
+
+    #[tokio::test]
+    async fn dna_update_existing() {
+        let handler = test_handler();
+
+        let add_result = handler
+            .dna_add(AddRequest {
+                artifact_type: ArtifactType::Intent,
+                content: "original".to_string(),
+                format: ContentFormat::Markdown,
+                name: None,
+                metadata: HashMap::new(),
+            })
+            .await
+            .unwrap();
+        let added: serde_json::Value =
+            serde_json::from_str(&add_result.content[0].as_text().unwrap().text).unwrap();
+        let id = added["id"].as_str().unwrap().to_string();
+
+        let result = handler
+            .dna_update(UpdateRequest {
+                id,
+                content: Some("updated".to_string()),
+                name: None,
+                metadata: None,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.is_error, Some(false));
+        let text = &result.content[0].as_text().unwrap().text;
+        assert!(text.contains("updated"));
+    }
+
+    #[tokio::test]
+    async fn dna_changes_returns_artifacts() {
+        let handler = test_handler();
+
+        handler
+            .dna_add(AddRequest {
+                artifact_type: ArtifactType::Intent,
+                content: "changed".to_string(),
+                format: ContentFormat::Markdown,
+                name: None,
+                metadata: HashMap::new(),
+            })
+            .await
+            .unwrap();
+
+        let result = handler
+            .dna_changes(ChangesRequest {
+                after: None,
+                before: None,
+            })
+            .await
+            .unwrap();
+
+        assert_eq!(result.is_error, Some(false));
+    }
+
+    #[test]
+    fn default_limit_is_10() {
+        assert_eq!(default_limit(), Some(10));
+    }
+
+    #[test]
+    fn default_format_is_markdown() {
+        assert_eq!(default_format(), ContentFormat::Markdown);
+    }
+
+    #[test]
+    fn get_info_returns_server_info() {
+        let handler = test_handler();
+        let info = handler.get_info();
+        assert_eq!(info.server_info.name, "dna-server");
+        assert!(info.capabilities.tools.is_some());
+    }
+}
