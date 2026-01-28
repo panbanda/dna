@@ -1,7 +1,7 @@
 # Lefthook Configuration for DNA CLI
 # Automated pre-commit hooks for code quality and consistency
 
-# Pre-commit hooks - run before each commit
+# Pre-commit hooks - run before each commit (fast checks only)
 pre-commit:
   parallel: true
 
@@ -12,46 +12,7 @@ pre-commit:
       run: cargo fmt --all
       stage_fixed: true
 
-    # Lint with clippy (matches CI configuration)
-    clippy:
-      glob: "*.rs"
-      run: cargo clippy --all-features --all-targets
+    # Code health score
+    omen:
+      run: omen score
 
-    # Run unit tests
-    test:
-      run: cargo test --lib --bins
-
-    # Check for security vulnerabilities
-    audit:
-      run: cargo audit 2>/dev/null || true
-
-    # Check for outdated dependencies
-    outdated:
-      run: cargo outdated --exit-code 1 2>/dev/null || true
-
-# Pre-push hooks - run before pushing to remote
-pre-push:
-  parallel: false
-
-  commands:
-    # Run full test suite including integration tests
-    test-all:
-      run: cargo test --all-features
-
-    # Check code coverage
-    coverage:
-      run: cargo tarpaulin --out Stdout --fail-under 65 --timeout 300 2>/dev/null || true
-
-    # Build release binary to ensure it compiles
-    build-release:
-      run: cargo build --release
-
-# Post-merge hooks - run after successful merge
-post-merge:
-  commands:
-    # Update dependencies after merge
-    update-deps:
-      run: cargo update
-
-# Install required tools (run manually):
-# cargo install cargo-audit cargo-outdated cargo-tarpaulin

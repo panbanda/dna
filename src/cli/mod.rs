@@ -7,6 +7,20 @@ mod search;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use std::collections::HashMap;
+
+/// Parse metadata key=value pairs from command line arguments
+pub fn parse_metadata(pairs: &[String]) -> Result<HashMap<String, String>> {
+    let mut map = HashMap::new();
+    for pair in pairs {
+        let parts: Vec<&str> = pair.splitn(2, '=').collect();
+        if parts.len() != 2 {
+            return Err(anyhow::anyhow!("Invalid metadata format: {}", pair));
+        }
+        map.insert(parts[0].to_string(), parts[1].to_string());
+    }
+    Ok(map)
+}
 
 #[derive(Parser)]
 #[command(name = "dna")]
