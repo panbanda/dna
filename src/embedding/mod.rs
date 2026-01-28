@@ -42,6 +42,7 @@ mod tests {
     use super::*;
 
     #[tokio::test]
+    #[ignore = "requires network access to download model"]
     async fn create_provider_local() {
         let config = ModelConfig {
             provider: "local".to_string(),
