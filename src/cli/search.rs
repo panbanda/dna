@@ -1,7 +1,7 @@
+use super::parse_metadata;
 use crate::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
 use anyhow::Result;
 use clap::Args;
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -160,14 +160,12 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 
     let service = ArtifactService::new(db, embedding);
 
-    // Try parsing as RFC3339 timestamp first
+    // Try parsing as RFC3339 timestamp first, then as git ref
     let since = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&args.since) {
         dt.with_timezone(&chrono::Utc)
     } else {
-        // TODO: Parse git ref and get commit timestamp
-        return Err(anyhow::anyhow!(
-            "Git ref parsing not yet implemented. Use RFC3339 timestamp."
-        ));
+        // Try to parse as git ref
+        parse_git_ref_timestamp(&args.since)?
     };
 
     let artifacts = service.changes(since).await?;
@@ -220,14 +218,29 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     Ok(())
 }
 
-fn parse_metadata(pairs: &[String]) -> Result<HashMap<String, String>> {
-    let mut map = HashMap::new();
-    for pair in pairs {
-        let parts: Vec<&str> = pair.splitn(2, '=').collect();
-        if parts.len() != 2 {
-            return Err(anyhow::anyhow!("Invalid metadata format: {}", pair));
-        }
-        map.insert(parts[0].to_string(), parts[1].to_string());
+/// Parse a git ref (commit hash, tag, branch) to a timestamp
+fn parse_git_ref_timestamp(git_ref: &str) -> Result<chrono::DateTime<chrono::Utc>> {
+    use std::process::Command;
+
+    // Run git show to get the commit timestamp in ISO 8601 format
+    let output = Command::new("git")
+        .args(["show", "-s", "--format=%cI", git_ref])
+        .output()
+        .map_err(|e| anyhow::anyhow!("Failed to run git: {}", e))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(anyhow::anyhow!(
+            "Invalid git ref '{}': {}",
+            git_ref,
+            stderr.trim()
+        ));
     }
-    Ok(map)
+
+    let timestamp_str = String::from_utf8_lossy(&output.stdout);
+    let timestamp_str = timestamp_str.trim();
+
+    chrono::DateTime::parse_from_rfc3339(timestamp_str)
+        .map(|dt| dt.with_timezone(&chrono::Utc))
+        .map_err(|e| anyhow::anyhow!("Failed to parse git timestamp '{}': {}", timestamp_str, e))
 }
