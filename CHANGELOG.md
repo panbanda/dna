@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.0](https://github.com/panbanda/dna/compare/dna-v0.1.7...dna-v0.2.0) (2026-01-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* replace rigid ArtifactType enum with flexible kind string
+
+### Features
+
+* add HTTP server with REST API, MCP, and Lambda support ([37359ad](https://github.com/panbanda/dna/commit/37359ad5bbce02c218b19360350c4a850f36b7e8))
+* implement dna-server with REST API, MCP HTTP, and auth ([1d67145](https://github.com/panbanda/dna/commit/1d67145e69fb15d3f817f2da2a844edc9ad9468c))
+* integrate rmcp SDK for MCP server ([a5bc05e](https://github.com/panbanda/dna/commit/a5bc05e403d31eb1d7bd2702ba519fdf099146ef))
+* replace rigid ArtifactType enum with flexible kind string ([6a75f25](https://github.com/panbanda/dna/commit/6a75f25900a3ab352cf9f7973c0ff6cf3c406b6c))
+* replace rigid ArtifactType enum with flexible kind string ([b3b2b9b](https://github.com/panbanda/dna/commit/b3b2b9b1b1497f0b4e449b5050c1726c576decc1))
+
+
+### Bug Fixes
+
+* address PR [#10](https://github.com/panbanda/dna/issues/10) review findings ([cb3f26b](https://github.com/panbanda/dna/commit/cb3f26b63eabcebb62f2d993d2741d8b7d8e8743))
+* **ci:** add handler tests, exclude only local.rs from coverage ([721dc37](https://github.com/panbanda/dna/commit/721dc372c6f033ac8fb93b3a4c76728fc85fcb89))
+* **ci:** exclude untestable files from coverage threshold ([a33a352](https://github.com/panbanda/dna/commit/a33a352ce1176d5baa55c80e7aa53782cb574886))
+* **ci:** switch release-please to simple strategy for workspace support ([65a2912](https://github.com/panbanda/dna/commit/65a291280972ac3530ab9948fb692a47963f61e6))
+
 ## [0.1.7](https://github.com/panbanda/dna/compare/dna-v0.1.6...dna-v0.1.7) (2026-01-28)
 
 
