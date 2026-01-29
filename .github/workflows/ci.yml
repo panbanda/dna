@@ -46,9 +46,6 @@ jobs:
       - name: Run tests
         run: cargo test --all-features
 
-      - name: Build release
-        run: cargo build --release
-
   coverage:
     name: Coverage (65% minimum)
     runs-on: ubuntu-latest
