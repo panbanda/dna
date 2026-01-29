@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/panbanda/dna/compare/dna-v0.2.1...dna-v0.2.2) (2026-01-29)
+
+
+### Bug Fixes
+
+* **ci:** remove release build from CI to stay within runner disk limits ([f30eadc](https://github.com/panbanda/dna/commit/f30eadcd2e51ee82a156e021a300b08971489ef5))
+
 ## [0.2.1](https://github.com/panbanda/dna/compare/dna-v0.2.0...dna-v0.2.1) (2026-01-29)
 
 
