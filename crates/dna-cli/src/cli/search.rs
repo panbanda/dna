@@ -1,7 +1,7 @@
 use super::parse_metadata;
-use crate::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
 use anyhow::Result;
 use clap::Args;
+use dna::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -32,9 +32,13 @@ pub struct ListArgs {
     #[arg(long = "filter")]
     filters: Vec<String>,
 
-    /// Show only artifacts since timestamp
+    /// Show only artifacts updated after timestamp
     #[arg(long)]
-    since: Option<String>,
+    after: Option<String>,
+
+    /// Show only artifacts updated before timestamp
+    #[arg(long)]
+    before: Option<String>,
 
     /// Limit number of results
     #[arg(long)]
@@ -43,9 +47,13 @@ pub struct ListArgs {
 
 #[derive(Args)]
 pub struct ChangesArgs {
-    /// Timestamp or git ref
+    /// Show artifacts updated after timestamp
     #[arg(long)]
-    since: String,
+    after: Option<String>,
+
+    /// Show artifacts updated before timestamp
+    #[arg(long)]
+    before: Option<String>,
 }
 
 #[derive(Args)]
@@ -67,8 +75,8 @@ pub async fn execute_search(args: SearchArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let search_service = SearchService::new(db, embedding);
 
@@ -78,7 +86,8 @@ pub async fn execute_search(args: SearchArgs) -> Result<()> {
     let filters = SearchFilters {
         artifact_type,
         metadata,
-        since: None,
+        after: None,
+        before: None,
         limit: Some(args.limit),
     };
 
@@ -110,15 +119,20 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db, embedding);
 
     let artifact_type = args.r#type.as_ref().map(|s| s.parse()).transpose()?;
     let metadata = parse_metadata(&args.filters)?;
-    let since = args
-        .since
+    let after = args
+        .after
+        .as_ref()
+        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
+        .transpose()?;
+    let before = args
+        .before
         .as_ref()
         .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
         .transpose()?;
@@ -126,7 +140,8 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
     let filters = SearchFilters {
         artifact_type,
         metadata,
-        since,
+        after,
+        before,
         limit: args.limit,
     };
 
@@ -155,20 +170,29 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db, embedding);
 
-    // Try parsing as RFC3339 timestamp first, then as git ref
-    let since = if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&args.since) {
-        dt.with_timezone(&chrono::Utc)
-    } else {
-        // Try to parse as git ref
-        parse_git_ref_timestamp(&args.since)?
+    let after = args
+        .after
+        .as_ref()
+        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
+        .transpose()?;
+    let before = args
+        .before
+        .as_ref()
+        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
+        .transpose()?;
+
+    let filters = SearchFilters {
+        after,
+        before,
+        ..Default::default()
     };
 
-    let artifacts = service.changes(since).await?;
+    let artifacts = service.list(filters).await?;
 
     println!("Found {} changed artifacts:", artifacts.len());
     for artifact in artifacts {
@@ -193,8 +217,8 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     let service = ArtifactService::new(db.clone(), embedding.clone());
     let search_service = SearchService::new(db, embedding);
@@ -216,31 +240,4 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     println!("Reindexed {} artifacts.", count);
 
     Ok(())
-}
-
-/// Parse a git ref (commit hash, tag, branch) to a timestamp
-fn parse_git_ref_timestamp(git_ref: &str) -> Result<chrono::DateTime<chrono::Utc>> {
-    use std::process::Command;
-
-    // Run git show to get the commit timestamp in ISO 8601 format
-    let output = Command::new("git")
-        .args(["show", "-s", "--format=%cI", git_ref])
-        .output()
-        .map_err(|e| anyhow::anyhow!("Failed to run git: {}", e))?;
-
-    if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        return Err(anyhow::anyhow!(
-            "Invalid git ref '{}': {}",
-            git_ref,
-            stderr.trim()
-        ));
-    }
-
-    let timestamp_str = String::from_utf8_lossy(&output.stdout);
-    let timestamp_str = timestamp_str.trim();
-
-    chrono::DateTime::parse_from_rfc3339(timestamp_str)
-        .map(|dt| dt.with_timezone(&chrono::Utc))
-        .map_err(|e| anyhow::anyhow!("Failed to parse git timestamp '{}': {}", timestamp_str, e))
 }

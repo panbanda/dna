@@ -1,9 +1,10 @@
 use chrono::{DateTime, Utc};
+use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Artifact type enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ArtifactType {
     Intent,
@@ -48,7 +49,7 @@ impl std::str::FromStr for ArtifactType {
 }
 
 /// Content format enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum ContentFormat {
     Markdown,
@@ -154,7 +155,8 @@ impl Artifact {
 pub struct SearchFilters {
     pub artifact_type: Option<ArtifactType>,
     pub metadata: HashMap<String, String>,
-    pub since: Option<DateTime<Utc>>,
+    pub after: Option<DateTime<Utc>>,
+    pub before: Option<DateTime<Utc>>,
     pub limit: Option<usize>,
 }
 
@@ -570,7 +572,8 @@ mod tests {
             let filters = SearchFilters::default();
             assert!(filters.artifact_type.is_none());
             assert!(filters.metadata.is_empty());
-            assert!(filters.since.is_none());
+            assert!(filters.after.is_none());
+            assert!(filters.before.is_none());
             assert!(filters.limit.is_none());
         }
     }

@@ -6,7 +6,7 @@ Cargo.lock
 
 # DNA project files
 .dna/
-dna/
+/dna/
 
 # IDE
 .vscode/

@@ -1,6 +1,8 @@
-use crate::services::ConfigService;
 use anyhow::Result;
 use clap::Args;
+use dna::mcp::DnaToolHandler;
+use dna::services::ConfigService;
+use rmcp::ServiceExt;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -26,8 +28,8 @@ pub async fn execute(args: McpArgs) -> Result<()> {
 
     let config = config_service.load()?;
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
-    let db = std::sync::Arc::new(crate::db::lance::LanceDatabase::new(&storage_uri).await?);
-    let embedding = crate::embedding::create_provider(&config.model).await?;
+    let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
+    let embedding = dna::embedding::create_provider(&config.model).await?;
 
     // Parse tool filters
     let include_tools = args.include.as_ref().map(|s| {
@@ -42,9 +44,13 @@ pub async fn execute(args: McpArgs) -> Result<()> {
             .collect::<Vec<_>>()
     });
 
-    // Start MCP server
-    let server = crate::mcp::McpServer::new(db, embedding, include_tools, exclude_tools);
-    server.run().await?;
+    // Log to stderr for stdio servers
+    eprintln!("Starting DNA MCP server...");
+
+    // Create handler and start server with stdio transport
+    let handler = DnaToolHandler::new(db, embedding, include_tools, exclude_tools);
+    let service = handler.serve(rmcp::transport::io::stdio()).await?;
+    service.waiting().await?;
 
     Ok(())
 }

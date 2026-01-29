@@ -7,3 +7,12 @@ pub use artifact::ArtifactService;
 pub use config::ConfigService;
 pub use search::SearchService;
 pub use types::*;
+
+#[derive(Debug, thiserror::Error)]
+pub enum ServiceError {
+    #[error("not found: {0}")]
+    NotFound(String),
+
+    #[error("{0}")]
+    Internal(#[from] anyhow::Error),
+}
