@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.2.1](https://github.com/panbanda/dna/compare/dna-v0.2.0...dna-v0.2.1) (2026-01-29)
+
+
+### Bug Fixes
+
+* upgrade hf-hub from 0.3 to 0.4 ([83fdd1e](https://github.com/panbanda/dna/commit/83fdd1e1f900e7fe649c127a4c14c5a68ad709eb))
+* upgrade hf-hub from 0.3 to 0.4 ([4198403](https://github.com/panbanda/dna/commit/4198403851efc96eccab66d2827dd1651d075d2c))
+
 ## [0.2.0](https://github.com/panbanda/dna/compare/dna-v0.1.7...dna-v0.2.0) (2026-01-29)
 
 
