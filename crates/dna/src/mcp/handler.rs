@@ -1,6 +1,6 @@
 use crate::db::Database;
 use crate::embedding::EmbeddingProvider;
-use crate::services::{ArtifactService, ArtifactType, ContentFormat, SearchFilters, SearchService};
+use crate::services::{ArtifactService, ContentFormat, SearchFilters, SearchService};
 use chrono::{DateTime, Utc};
 use rmcp::model::{CallToolResult, Content, PaginatedRequestParams};
 use rmcp::service::RequestContext;
@@ -62,7 +62,7 @@ impl DnaToolHandler {
     /// Semantic search for truth artifacts
     async fn dna_search(&self, request: SearchRequest) -> Result<CallToolResult, ErrorData> {
         let filters = SearchFilters {
-            artifact_type: request.artifact_type,
+            kind: request.kind,
             limit: request.limit,
             ..Default::default()
         };
@@ -107,10 +107,10 @@ impl DnaToolHandler {
         })
     }
 
-    /// List artifacts by type/metadata
+    /// List artifacts by kind/metadata
     async fn dna_list(&self, request: ListRequest) -> Result<CallToolResult, ErrorData> {
         let filters = SearchFilters {
-            artifact_type: request.artifact_type,
+            kind: request.kind,
             after: request.after,
             before: request.before,
             limit: request.limit,
@@ -164,7 +164,7 @@ impl DnaToolHandler {
         let artifact = self
             .artifact_service
             .add(
-                request.artifact_type,
+                request.kind,
                 request.content,
                 request.format,
                 request.name,
@@ -188,7 +188,13 @@ impl DnaToolHandler {
     async fn dna_update(&self, request: UpdateRequest) -> Result<CallToolResult, ErrorData> {
         let artifact = self
             .artifact_service
-            .update(&request.id, request.content, request.name, request.metadata)
+            .update(
+                &request.id,
+                request.content,
+                request.name,
+                request.kind,
+                request.metadata,
+            )
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
@@ -290,7 +296,7 @@ impl ServerHandler for DnaToolHandler {
             },
             Tool {
                 name: "dna_list".into(),
-                description: Some("List artifacts by type/metadata".into()),
+                description: Some("List artifacts by kind/metadata".into()),
                 input_schema: schema_to_json!(ListRequest),
                 title: None,
                 output_schema: None,
@@ -419,8 +425,7 @@ impl ServerHandler for DnaToolHandler {
 #[derive(Debug, Deserialize, JsonSchema)]
 struct SearchRequest {
     query: String,
-    #[serde(rename = "type")]
-    artifact_type: Option<ArtifactType>,
+    kind: Option<String>,
     #[serde(default = "default_limit")]
     limit: Option<usize>,
 }
@@ -432,8 +437,7 @@ struct GetRequest {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 struct ListRequest {
-    #[serde(rename = "type")]
-    artifact_type: Option<ArtifactType>,
+    kind: Option<String>,
     #[serde(default)]
     after: Option<DateTime<Utc>>,
     #[serde(default)]
@@ -449,8 +453,7 @@ struct ChangesRequest {
 
 #[derive(Debug, Deserialize, JsonSchema)]
 struct AddRequest {
-    #[serde(rename = "type")]
-    artifact_type: ArtifactType,
+    kind: String,
     content: String,
     #[serde(default = "default_format")]
     format: ContentFormat,
@@ -464,6 +467,7 @@ struct UpdateRequest {
     id: String,
     content: Option<String>,
     name: Option<String>,
+    kind: Option<String>,
     metadata: Option<HashMap<String, String>>,
 }
 
@@ -601,7 +605,7 @@ mod tests {
     async fn dna_add_creates_artifact() {
         let handler = test_handler();
         let request = AddRequest {
-            artifact_type: ArtifactType::Intent,
+            kind: "intent".to_string(),
             content: "test content".to_string(),
             format: ContentFormat::Markdown,
             name: Some("test".to_string()),
@@ -630,7 +634,7 @@ mod tests {
 
         // Add first
         let add_request = AddRequest {
-            artifact_type: ArtifactType::Intent,
+            kind: "intent".to_string(),
             content: "get me".to_string(),
             format: ContentFormat::Markdown,
             name: None,
@@ -653,7 +657,7 @@ mod tests {
 
         handler
             .dna_add(AddRequest {
-                artifact_type: ArtifactType::Intent,
+                kind: "intent".to_string(),
                 content: "one".to_string(),
                 format: ContentFormat::Markdown,
                 name: None,
@@ -664,7 +668,7 @@ mod tests {
 
         let result = handler
             .dna_list(ListRequest {
-                artifact_type: None,
+                kind: None,
                 after: None,
                 before: None,
                 limit: None,
@@ -684,7 +688,7 @@ mod tests {
 
         handler
             .dna_add(AddRequest {
-                artifact_type: ArtifactType::Intent,
+                kind: "intent".to_string(),
                 content: "searchable".to_string(),
                 format: ContentFormat::Markdown,
                 name: None,
@@ -696,7 +700,7 @@ mod tests {
         let result = handler
             .dna_search(SearchRequest {
                 query: "searchable".to_string(),
-                artifact_type: None,
+                kind: None,
                 limit: Some(10),
             })
             .await
@@ -726,7 +730,7 @@ mod tests {
 
         let add_result = handler
             .dna_add(AddRequest {
-                artifact_type: ArtifactType::Intent,
+                kind: "intent".to_string(),
                 content: "original".to_string(),
                 format: ContentFormat::Markdown,
                 name: None,
@@ -743,6 +747,7 @@ mod tests {
                 id,
                 content: Some("updated".to_string()),
                 name: None,
+                kind: None,
                 metadata: None,
             })
             .await
@@ -759,7 +764,7 @@ mod tests {
 
         handler
             .dna_add(AddRequest {
-                artifact_type: ArtifactType::Intent,
+                kind: "intent".to_string(),
                 content: "changed".to_string(),
                 format: ContentFormat::Markdown,
                 name: None,

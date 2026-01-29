@@ -46,7 +46,7 @@ mod render_integration_tests {
             name: Option<&str>,
             metadata: &[(&str, &str)],
         ) -> String {
-            let mut args = vec![artifact_type, "add", content];
+            let mut args = vec!["add", artifact_type, content];
 
             if let Some(n) = name {
                 args.push("--name");
@@ -121,7 +121,7 @@ mod render_integration_tests {
         // Check frontmatter
         assert!(content.starts_with("---"));
         assert!(content.contains(&format!("id: {}", id)));
-        assert!(content.contains("type: invariant"));
+        assert!(content.contains("kind: invariant"));
         assert!(content.contains("format: markdown"));
         assert!(content.contains("domain: auth"));
         assert!(content.contains("priority: high"));
@@ -237,7 +237,7 @@ mod render_integration_tests {
         ctx.init();
 
         ctx.cmd()
-            .args(&["contract", "add", r#"{"openapi": "3.0.0"}"#, "--format", "json", "--name", "api-contract"])
+            .args(&["add", "contract", r#"{"openapi": "3.0.0"}"#, "--format", "json", "--name", "api-contract"])
             .assert()
             .success();
 
@@ -324,7 +324,7 @@ mod render_integration_tests {
 
         // Update the artifact
         ctx.cmd()
-            .args(&["intent", "update", &id, "--content", "Updated content"])
+            .args(&["update", &id, "--content", "Updated content"])
             .assert()
             .success();
 

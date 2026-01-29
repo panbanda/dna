@@ -9,9 +9,9 @@ pub struct SearchArgs {
     /// Search query
     query: String,
 
-    /// Filter by artifact type
+    /// Filter by artifact kind
     #[arg(long)]
-    r#type: Option<String>,
+    kind: Option<String>,
 
     /// Filter by metadata key=value
     #[arg(long = "filter")]
@@ -24,9 +24,9 @@ pub struct SearchArgs {
 
 #[derive(Args)]
 pub struct ListArgs {
-    /// Filter by artifact type
+    /// Filter by artifact kind
     #[arg(long)]
-    r#type: Option<String>,
+    kind: Option<String>,
 
     /// Filter by metadata key=value
     #[arg(long = "filter")]
@@ -80,11 +80,10 @@ pub async fn execute_search(args: SearchArgs) -> Result<()> {
 
     let search_service = SearchService::new(db, embedding);
 
-    let artifact_type = args.r#type.as_ref().map(|s| s.parse()).transpose()?;
     let metadata = parse_metadata(&args.filters)?;
 
     let filters = SearchFilters {
-        artifact_type,
+        kind: args.kind,
         metadata,
         after: None,
         before: None,
@@ -96,7 +95,7 @@ pub async fn execute_search(args: SearchArgs) -> Result<()> {
     println!("Found {} results:", results.len());
     for result in results {
         println!("\n  ID: {}", result.artifact.id);
-        println!("  Type: {}", result.artifact.artifact_type);
+        println!("  Kind: {}", result.artifact.kind);
         println!("  Score: {:.4}", result.score);
         println!(
             "  Content: {}...",
@@ -124,7 +123,6 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
 
     let service = ArtifactService::new(db, embedding);
 
-    let artifact_type = args.r#type.as_ref().map(|s| s.parse()).transpose()?;
     let metadata = parse_metadata(&args.filters)?;
     let after = args
         .after
@@ -138,7 +136,7 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
         .transpose()?;
 
     let filters = SearchFilters {
-        artifact_type,
+        kind: args.kind,
         metadata,
         after,
         before,
@@ -151,7 +149,7 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
     for artifact in artifacts {
         println!(
             "  {} - {} ({})",
-            artifact.id, artifact.artifact_type, artifact.format
+            artifact.id, artifact.kind, artifact.format
         );
     }
 
@@ -198,7 +196,7 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
     for artifact in artifacts {
         println!(
             "  {} - {} (updated: {})",
-            artifact.id, artifact.artifact_type, artifact.updated_at
+            artifact.id, artifact.kind, artifact.updated_at
         );
     }
 

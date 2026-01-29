@@ -3,49 +3,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-/// Artifact type enumeration
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
-#[serde(rename_all = "lowercase")]
-pub enum ArtifactType {
-    Intent,
-    Invariant,
-    Contract,
-    Algorithm,
-    Evaluation,
-    Pace,
-    Monitor,
-}
-
-impl std::fmt::Display for ArtifactType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            ArtifactType::Intent => "intent",
-            ArtifactType::Invariant => "invariant",
-            ArtifactType::Contract => "contract",
-            ArtifactType::Algorithm => "algorithm",
-            ArtifactType::Evaluation => "evaluation",
-            ArtifactType::Pace => "pace",
-            ArtifactType::Monitor => "monitor",
-        };
-        write!(f, "{}", s)
-    }
-}
-
-impl std::str::FromStr for ArtifactType {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "intent" => Ok(ArtifactType::Intent),
-            "invariant" => Ok(ArtifactType::Invariant),
-            "contract" => Ok(ArtifactType::Contract),
-            "algorithm" => Ok(ArtifactType::Algorithm),
-            "evaluation" => Ok(ArtifactType::Evaluation),
-            "pace" => Ok(ArtifactType::Pace),
-            "monitor" => Ok(ArtifactType::Monitor),
-            _ => Err(anyhow::anyhow!("Invalid artifact type: {}", s)),
-        }
-    }
+/// Transform a kind string to kebab-case slug.
+pub fn slugify_kind(input: &str) -> String {
+    slug::slugify(input)
 }
 
 /// Content format enumeration
@@ -91,8 +51,7 @@ impl std::str::FromStr for ContentFormat {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Artifact {
     pub id: String,
-    #[serde(rename = "type")]
-    pub artifact_type: ArtifactType,
+    pub kind: String,
     pub name: Option<String>,
     pub content: String,
     pub format: ContentFormat,
@@ -116,7 +75,7 @@ impl Artifact {
 
     /// Create a new artifact
     pub fn new(
-        artifact_type: ArtifactType,
+        kind: String,
         content: String,
         format: ContentFormat,
         name: Option<String>,
@@ -126,7 +85,7 @@ impl Artifact {
         let now = Utc::now();
         Self {
             id: Self::generate_id(),
-            artifact_type,
+            kind,
             name,
             content,
             format,
@@ -153,7 +112,7 @@ impl Artifact {
 /// Search filters
 #[derive(Debug, Clone, Default)]
 pub struct SearchFilters {
-    pub artifact_type: Option<ArtifactType>,
+    pub kind: Option<String>,
     pub metadata: HashMap<String, String>,
     pub after: Option<DateTime<Utc>>,
     pub before: Option<DateTime<Utc>>,
@@ -210,6 +169,30 @@ pub struct ProjectConfig {
 mod tests {
     use super::*;
     use std::collections::HashSet;
+
+    mod slugify {
+        use super::*;
+
+        #[test]
+        fn transforms_to_kebab_case() {
+            assert_eq!(slugify_kind("My Custom Type"), "my-custom-type");
+            assert_eq!(slugify_kind("intent"), "intent");
+            assert_eq!(slugify_kind("UPPER CASE"), "upper-case");
+            assert_eq!(slugify_kind("already-slugged"), "already-slugged");
+            assert_eq!(slugify_kind("with  extra   spaces"), "with-extra-spaces");
+        }
+
+        #[test]
+        fn handles_special_characters() {
+            assert_eq!(slugify_kind("hello/world"), "hello-world");
+            assert_eq!(slugify_kind("test_case"), "test-case");
+        }
+
+        #[test]
+        fn handles_empty_string() {
+            assert_eq!(slugify_kind(""), "");
+        }
+    }
 
     mod id_generation {
         use super::*;
@@ -270,95 +253,7 @@ mod tests {
         #[test]
         fn id_is_url_safe() {
             let id = Artifact::generate_id();
-            // All characters should be alphanumeric
             assert!(id.chars().all(|c| c.is_ascii_alphanumeric()));
-        }
-    }
-
-    mod artifact_type {
-        use super::*;
-
-        #[test]
-        fn serializes_lowercase() {
-            let types = [
-                (ArtifactType::Intent, "\"intent\""),
-                (ArtifactType::Invariant, "\"invariant\""),
-                (ArtifactType::Contract, "\"contract\""),
-                (ArtifactType::Algorithm, "\"algorithm\""),
-                (ArtifactType::Evaluation, "\"evaluation\""),
-                (ArtifactType::Pace, "\"pace\""),
-                (ArtifactType::Monitor, "\"monitor\""),
-            ];
-
-            for (artifact_type, expected_json) in types {
-                let json = serde_json::to_string(&artifact_type).unwrap();
-                assert_eq!(json, expected_json);
-            }
-        }
-
-        #[test]
-        fn deserializes_lowercase() {
-            let types = [
-                ("\"intent\"", ArtifactType::Intent),
-                ("\"invariant\"", ArtifactType::Invariant),
-                ("\"contract\"", ArtifactType::Contract),
-                ("\"algorithm\"", ArtifactType::Algorithm),
-                ("\"evaluation\"", ArtifactType::Evaluation),
-                ("\"pace\"", ArtifactType::Pace),
-                ("\"monitor\"", ArtifactType::Monitor),
-            ];
-
-            for (json, expected) in types {
-                let result: ArtifactType = serde_json::from_str(json).unwrap();
-                assert_eq!(result, expected);
-            }
-        }
-
-        #[test]
-        fn from_str_case_insensitive() {
-            assert_eq!(
-                "Intent".parse::<ArtifactType>().unwrap(),
-                ArtifactType::Intent
-            );
-            assert_eq!(
-                "INTENT".parse::<ArtifactType>().unwrap(),
-                ArtifactType::Intent
-            );
-            assert_eq!(
-                "intent".parse::<ArtifactType>().unwrap(),
-                ArtifactType::Intent
-            );
-        }
-
-        #[test]
-        fn from_str_invalid_returns_error() {
-            let result = "invalid".parse::<ArtifactType>();
-            assert!(result.is_err());
-        }
-
-        #[test]
-        fn display_returns_lowercase_for_all_types() {
-            assert_eq!(ArtifactType::Intent.to_string(), "intent");
-            assert_eq!(ArtifactType::Invariant.to_string(), "invariant");
-            assert_eq!(ArtifactType::Contract.to_string(), "contract");
-            assert_eq!(ArtifactType::Algorithm.to_string(), "algorithm");
-            assert_eq!(ArtifactType::Evaluation.to_string(), "evaluation");
-            assert_eq!(ArtifactType::Pace.to_string(), "pace");
-            assert_eq!(ArtifactType::Monitor.to_string(), "monitor");
-        }
-
-        #[test]
-        fn all_seven_types_exist() {
-            let types = [
-                ArtifactType::Intent,
-                ArtifactType::Invariant,
-                ArtifactType::Contract,
-                ArtifactType::Algorithm,
-                ArtifactType::Evaluation,
-                ArtifactType::Pace,
-                ArtifactType::Monitor,
-            ];
-            assert_eq!(types.len(), 7);
         }
     }
 
@@ -425,7 +320,7 @@ mod tests {
         #[test]
         fn new_generates_unique_id() {
             let a1 = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 "content".to_string(),
                 ContentFormat::Markdown,
                 None,
@@ -433,7 +328,7 @@ mod tests {
                 "model".to_string(),
             );
             let a2 = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 "content".to_string(),
                 ContentFormat::Markdown,
                 None,
@@ -446,7 +341,7 @@ mod tests {
         #[test]
         fn new_sets_timestamps() {
             let artifact = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 "content".to_string(),
                 ContentFormat::Markdown,
                 None,
@@ -454,6 +349,19 @@ mod tests {
                 "model".to_string(),
             );
             assert_eq!(artifact.created_at, artifact.updated_at);
+        }
+
+        #[test]
+        fn new_stores_kind() {
+            let artifact = Artifact::new(
+                "custom-kind".to_string(),
+                "content".to_string(),
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+                "model".to_string(),
+            );
+            assert_eq!(artifact.kind, "custom-kind");
         }
 
         #[test]
@@ -468,7 +376,7 @@ mod tests {
 
             for (format, expected_ext) in cases {
                 let artifact = Artifact::new(
-                    ArtifactType::Intent,
+                    "intent".to_string(),
                     "content".to_string(),
                     format,
                     None,
@@ -482,7 +390,7 @@ mod tests {
         #[test]
         fn json_roundtrip() {
             let artifact = Artifact::new(
-                ArtifactType::Contract,
+                "contract".to_string(),
                 "Test content with unicode: 'test'".to_string(),
                 ContentFormat::Json,
                 Some("test-name".to_string()),
@@ -494,16 +402,32 @@ mod tests {
             let deserialized: Artifact = serde_json::from_str(&json).unwrap();
 
             assert_eq!(deserialized.id, artifact.id);
-            assert_eq!(deserialized.artifact_type, artifact.artifact_type);
+            assert_eq!(deserialized.kind, artifact.kind);
             assert_eq!(deserialized.content, artifact.content);
             assert_eq!(deserialized.name, artifact.name);
+        }
+
+        #[test]
+        fn json_serializes_kind_field() {
+            let artifact = Artifact::new(
+                "my-kind".to_string(),
+                "content".to_string(),
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+                "model".to_string(),
+            );
+
+            let json = serde_json::to_string(&artifact).unwrap();
+            let value: serde_json::Value = serde_json::from_str(&json).unwrap();
+            assert_eq!(value["kind"], "my-kind");
         }
 
         #[test]
         fn handles_unicode_content() {
             let unicode_content = "Hello 'test' test";
             let artifact = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 unicode_content.to_string(),
                 ContentFormat::Markdown,
                 None,
@@ -516,7 +440,7 @@ mod tests {
         #[test]
         fn handles_empty_content() {
             let artifact = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 String::new(),
                 ContentFormat::Markdown,
                 None,
@@ -530,7 +454,7 @@ mod tests {
         fn handles_large_content() {
             let large_content = "x".repeat(100_000);
             let artifact = Artifact::new(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 large_content.clone(),
                 ContentFormat::Markdown,
                 None,
@@ -538,6 +462,22 @@ mod tests {
                 "model".to_string(),
             );
             assert_eq!(artifact.content.len(), 100_000);
+        }
+
+        #[test]
+        fn accepts_any_kind_string() {
+            let kinds = ["intent", "custom-kind", "my-special-type", "x"];
+            for kind in kinds {
+                let artifact = Artifact::new(
+                    kind.to_string(),
+                    "content".to_string(),
+                    ContentFormat::Markdown,
+                    None,
+                    HashMap::new(),
+                    "model".to_string(),
+                );
+                assert_eq!(artifact.kind, kind);
+            }
         }
     }
 
@@ -570,7 +510,7 @@ mod tests {
         #[test]
         fn default_is_empty() {
             let filters = SearchFilters::default();
-            assert!(filters.artifact_type.is_none());
+            assert!(filters.kind.is_none());
             assert!(filters.metadata.is_empty());
             assert!(filters.after.is_none());
             assert!(filters.before.is_none());

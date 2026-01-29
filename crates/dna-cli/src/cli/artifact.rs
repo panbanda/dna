@@ -1,86 +1,65 @@
 use super::parse_metadata;
 use anyhow::Result;
-use clap::{Args, Subcommand};
-use dna::services::{ArtifactService, ArtifactType, ConfigService, ContentFormat};
+use clap::Args;
+use dna::services::{ArtifactService, ConfigService, ContentFormat};
 use std::path::PathBuf;
 
 #[derive(Args)]
-pub struct ArtifactArgs {
-    #[command(subcommand)]
-    command: ArtifactCommands,
+pub struct AddArgs {
+    /// Artifact kind (e.g. intent, contract, algorithm)
+    pub kind: String,
+
+    /// Artifact content
+    pub content: String,
+
+    /// Optional name slug
+    #[arg(long)]
+    pub name: Option<String>,
+
+    /// Content format
+    #[arg(long, default_value = "markdown")]
+    pub format: String,
+
+    /// Metadata key=value pairs
+    #[arg(long = "meta")]
+    pub metadata: Vec<String>,
 }
 
-#[derive(Subcommand)]
-enum ArtifactCommands {
-    /// Add a new artifact
-    Add {
-        /// Artifact content
-        content: String,
-
-        /// Optional name slug
-        #[arg(long)]
-        name: Option<String>,
-
-        /// Content format
-        #[arg(long, default_value = "markdown")]
-        format: String,
-
-        /// Metadata key=value pairs
-        #[arg(long = "meta")]
-        metadata: Vec<String>,
-    },
-
-    /// Get an artifact by ID
-    Get {
-        /// Artifact ID
-        id: String,
-    },
-
-    /// Update an artifact
-    Update {
-        /// Artifact ID
-        id: String,
-
-        /// New content
-        #[arg(long)]
-        content: Option<String>,
-
-        /// New name
-        #[arg(long)]
-        name: Option<String>,
-
-        /// Metadata key=value pairs to add/update
-        #[arg(long = "meta")]
-        metadata: Vec<String>,
-    },
-
-    /// Remove an artifact
-    Remove {
-        /// Artifact ID
-        id: String,
-    },
-
-    /// List artifacts
-    List {
-        /// Filter by metadata key=value
-        #[arg(long = "filter")]
-        filters: Vec<String>,
-
-        /// Show only artifacts updated after timestamp
-        #[arg(long)]
-        after: Option<String>,
-
-        /// Show only artifacts updated before timestamp
-        #[arg(long)]
-        before: Option<String>,
-
-        /// Limit number of results
-        #[arg(long)]
-        limit: Option<usize>,
-    },
+#[derive(Args)]
+pub struct GetArgs {
+    /// Artifact ID
+    pub id: String,
 }
 
-pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<()> {
+#[derive(Args)]
+pub struct UpdateArgs {
+    /// Artifact ID
+    pub id: String,
+
+    /// New content
+    #[arg(long)]
+    pub content: Option<String>,
+
+    /// New name
+    #[arg(long)]
+    pub name: Option<String>,
+
+    /// New kind
+    #[arg(long)]
+    pub kind: Option<String>,
+
+    /// Metadata key=value pairs to add/update
+    #[arg(long = "meta")]
+    pub metadata: Vec<String>,
+}
+
+#[derive(Args)]
+pub struct RemoveArgs {
+    /// Artifact ID
+    pub id: String,
+}
+
+async fn create_service() -> Result<ArtifactService> {
     let project_root = PathBuf::from(".");
     let config_service = ConfigService::new(&project_root);
 
@@ -91,99 +70,60 @@ pub async fn execute(args: ArtifactArgs, artifact_type: ArtifactType) -> Result<
     }
 
     let config = config_service.load()?;
-
-    // Create database and embedding provider
     let storage_uri = config_service.resolve_storage_uri(&project_root)?;
     let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
     let embedding = dna::embedding::create_provider(&config.model).await?;
 
-    let service = ArtifactService::new(db, embedding);
+    Ok(ArtifactService::new(db, embedding))
+}
 
-    match args.command {
-        ArtifactCommands::Add {
-            content,
-            name,
-            format,
-            metadata,
-        } => {
-            let format: ContentFormat = format.parse()?;
-            let metadata = parse_metadata(&metadata)?;
+pub async fn execute_add(args: AddArgs) -> Result<()> {
+    let service = create_service().await?;
+    let format: ContentFormat = args.format.parse()?;
+    let metadata = parse_metadata(&args.metadata)?;
 
-            let artifact = service
-                .add(artifact_type, content, format, name, metadata)
-                .await?;
-            println!("Added artifact: {}", artifact.id);
-            println!("{}", serde_json::to_string_pretty(&artifact)?);
-        },
+    let artifact = service
+        .add(args.kind, args.content, format, args.name, metadata)
+        .await?;
+    println!("Added artifact: {}", artifact.id);
+    println!("{}", serde_json::to_string_pretty(&artifact)?);
+    Ok(())
+}
 
-        ArtifactCommands::Get { id } => {
-            if let Some(artifact) = service.get(&id).await? {
-                println!("{}", serde_json::to_string_pretty(&artifact)?);
-            } else {
-                println!("Artifact not found: {}", id);
-            }
-        },
+pub async fn execute_get(args: GetArgs) -> Result<()> {
+    let service = create_service().await?;
 
-        ArtifactCommands::Update {
-            id,
-            content,
-            name,
-            metadata,
-        } => {
-            let metadata = if metadata.is_empty() {
-                None
-            } else {
-                Some(parse_metadata(&metadata)?)
-            };
-
-            let artifact = service.update(&id, content, name, metadata).await?;
-            println!("Updated artifact: {}", artifact.id);
-            println!("{}", serde_json::to_string_pretty(&artifact)?);
-        },
-
-        ArtifactCommands::Remove { id } => {
-            if service.remove(&id).await? {
-                println!("Removed artifact: {}", id);
-            } else {
-                println!("Artifact not found: {}", id);
-            }
-        },
-
-        ArtifactCommands::List {
-            filters,
-            after,
-            before,
-            limit,
-        } => {
-            let metadata_filters = parse_metadata(&filters)?;
-            let after_dt = after
-                .as_ref()
-                .map(|s| {
-                    chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
-                })
-                .transpose()?;
-            let before_dt = before
-                .as_ref()
-                .map(|s| {
-                    chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc))
-                })
-                .transpose()?;
-
-            let search_filters = dna::services::SearchFilters {
-                artifact_type: Some(artifact_type),
-                metadata: metadata_filters,
-                after: after_dt,
-                before: before_dt,
-                limit,
-            };
-
-            let artifacts = service.list(search_filters).await?;
-            println!("Found {} artifacts:", artifacts.len());
-            for artifact in artifacts {
-                println!("  {} - {}", artifact.id, artifact.artifact_type);
-            }
-        },
+    if let Some(artifact) = service.get(&args.id).await? {
+        println!("{}", serde_json::to_string_pretty(&artifact)?);
+    } else {
+        println!("Artifact not found: {}", args.id);
     }
+    Ok(())
+}
 
+pub async fn execute_update(args: UpdateArgs) -> Result<()> {
+    let service = create_service().await?;
+    let metadata = if args.metadata.is_empty() {
+        None
+    } else {
+        Some(parse_metadata(&args.metadata)?)
+    };
+
+    let artifact = service
+        .update(&args.id, args.content, args.name, args.kind, metadata)
+        .await?;
+    println!("Updated artifact: {}", artifact.id);
+    println!("{}", serde_json::to_string_pretty(&artifact)?);
+    Ok(())
+}
+
+pub async fn execute_remove(args: RemoveArgs) -> Result<()> {
+    let service = create_service().await?;
+
+    if service.remove(&args.id).await? {
+        println!("Removed artifact: {}", args.id);
+    } else {
+        println!("Artifact not found: {}", args.id);
+    }
     Ok(())
 }

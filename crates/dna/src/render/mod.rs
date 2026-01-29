@@ -37,7 +37,7 @@ impl RenderService {
         let mut groups: HashMap<Vec<String>, Vec<&'a Artifact>> = HashMap::new();
 
         for artifact in artifacts {
-            let mut path_parts = vec![artifact.artifact_type.to_string()];
+            let mut path_parts = vec![artifact.kind.clone()];
 
             for key in keys {
                 if let Some(value) = artifact.metadata.get(key) {
@@ -98,8 +98,8 @@ impl RenderService {
     /// Generate YAML frontmatter
     fn generate_frontmatter(&self, artifact: &Artifact) -> Result<String> {
         let mut frontmatter = format!(
-            "id: {}\ntype: {}\nformat: {}",
-            artifact.id, artifact.artifact_type, artifact.format
+            "id: {}\nkind: {}\nformat: {}",
+            artifact.id, artifact.kind, artifact.format
         );
 
         if !artifact.metadata.is_empty() {
@@ -122,19 +122,19 @@ impl RenderService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{ArtifactType, ContentFormat};
+    use crate::services::ContentFormat;
     use std::collections::HashMap;
     use tempfile::TempDir;
 
     fn create_test_artifact(
         name: Option<&str>,
         content: &str,
-        artifact_type: ArtifactType,
+        kind: &str,
         metadata: HashMap<String, String>,
     ) -> Artifact {
         use crate::services::Artifact;
         Artifact::new(
-            artifact_type,
+            kind.to_string(),
             content.to_string(),
             ContentFormat::Markdown,
             name.map(String::from),
@@ -151,7 +151,7 @@ mod tests {
         let artifact = create_test_artifact(
             Some("Test Artifact Name"),
             "content",
-            ArtifactType::Intent,
+            "intent",
             HashMap::new(),
         );
 
@@ -167,7 +167,7 @@ mod tests {
         let artifact = create_test_artifact(
             None,
             "This is the artifact content that should be slugified",
-            ArtifactType::Intent,
+            "intent",
             HashMap::new(),
         );
 
@@ -181,7 +181,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let service = RenderService::new(temp_dir.path().to_path_buf());
 
-        let artifact = create_test_artifact(None, "!@#$%^", ArtifactType::Intent, HashMap::new());
+        let artifact = create_test_artifact(None, "!@#$%^", "intent", HashMap::new());
 
         let filename = service.generate_filename(&artifact).unwrap();
         assert!(filename.ends_with(".md"));
@@ -192,16 +192,11 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let service = RenderService::new(temp_dir.path().to_path_buf());
 
-        let artifact = create_test_artifact(
-            Some("test"),
-            "content",
-            ArtifactType::Contract,
-            HashMap::new(),
-        );
+        let artifact = create_test_artifact(Some("test"), "content", "contract", HashMap::new());
 
         let frontmatter = service.generate_frontmatter(&artifact).unwrap();
         assert!(frontmatter.contains(&format!("id: {}", artifact.id)));
-        assert!(frontmatter.contains("type: contract"));
+        assert!(frontmatter.contains("kind: contract"));
         assert!(frontmatter.contains("format: markdown"));
         assert!(frontmatter.contains("created_at:"));
         assert!(frontmatter.contains("updated_at:"));
@@ -216,8 +211,7 @@ mod tests {
         metadata.insert("domain".to_string(), "auth".to_string());
         metadata.insert("priority".to_string(), "high".to_string());
 
-        let artifact =
-            create_test_artifact(Some("test"), "content", ArtifactType::Intent, metadata);
+        let artifact = create_test_artifact(Some("test"), "content", "intent", metadata);
 
         let frontmatter = service.generate_frontmatter(&artifact).unwrap();
         assert!(frontmatter.contains("metadata:"));
@@ -230,9 +224,9 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let service = RenderService::new(temp_dir.path().to_path_buf());
 
-        let a1 = create_test_artifact(None, "intent1", ArtifactType::Intent, HashMap::new());
-        let a2 = create_test_artifact(None, "contract1", ArtifactType::Contract, HashMap::new());
-        let a3 = create_test_artifact(None, "intent2", ArtifactType::Intent, HashMap::new());
+        let a1 = create_test_artifact(None, "intent1", "intent", HashMap::new());
+        let a2 = create_test_artifact(None, "contract1", "contract", HashMap::new());
+        let a3 = create_test_artifact(None, "intent2", "intent", HashMap::new());
 
         let artifacts = vec![a1, a2, a3];
         let groups = service.group_artifacts(&artifacts, &[]);
@@ -253,8 +247,8 @@ mod tests {
         let mut meta2 = HashMap::new();
         meta2.insert("domain".to_string(), "billing".to_string());
 
-        let a1 = create_test_artifact(None, "one", ArtifactType::Intent, meta1);
-        let a2 = create_test_artifact(None, "two", ArtifactType::Intent, meta2);
+        let a1 = create_test_artifact(None, "one", "intent", meta1);
+        let a2 = create_test_artifact(None, "two", "intent", meta2);
 
         let artifacts = vec![a1, a2];
         let groups = service.group_artifacts(&artifacts, &["domain".to_string()]);
@@ -270,7 +264,7 @@ mod tests {
         let artifact = create_test_artifact(
             Some("test-artifact"),
             "This is the content",
-            ArtifactType::Intent,
+            "intent",
             HashMap::new(),
         );
 
@@ -293,18 +287,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let service = RenderService::new(temp_dir.path().to_path_buf());
 
-        let a1 = create_test_artifact(
-            Some("intent-one"),
-            "content1",
-            ArtifactType::Intent,
-            HashMap::new(),
-        );
-        let a2 = create_test_artifact(
-            Some("contract-one"),
-            "content2",
-            ArtifactType::Contract,
-            HashMap::new(),
-        );
+        let a1 = create_test_artifact(Some("intent-one"), "content1", "intent", HashMap::new());
+        let a2 = create_test_artifact(Some("contract-one"), "content2", "contract", HashMap::new());
 
         let artifacts = vec![a1, a2];
         service.render_all(&artifacts, &[]).await.unwrap();

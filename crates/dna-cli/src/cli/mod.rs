@@ -35,26 +35,17 @@ pub enum Commands {
     /// Initialize a new DNA project
     Init(init::InitArgs),
 
-    /// Manage intent artifacts
-    Intent(artifact::ArtifactArgs),
+    /// Add a new artifact
+    Add(artifact::AddArgs),
 
-    /// Manage invariant artifacts
-    Invariant(artifact::ArtifactArgs),
+    /// Get an artifact by ID
+    Get(artifact::GetArgs),
 
-    /// Manage contract artifacts
-    Contract(artifact::ArtifactArgs),
+    /// Update an existing artifact
+    Update(artifact::UpdateArgs),
 
-    /// Manage algorithm artifacts
-    Algorithm(artifact::ArtifactArgs),
-
-    /// Manage evaluation artifacts
-    Evaluation(artifact::ArtifactArgs),
-
-    /// Manage pace artifacts
-    Pace(artifact::ArtifactArgs),
-
-    /// Manage monitor artifacts
-    Monitor(artifact::ArtifactArgs),
+    /// Remove an artifact
+    Remove(artifact::RemoveArgs),
 
     /// Semantic search across artifacts
     Search(search::SearchArgs),
@@ -82,25 +73,10 @@ pub enum Commands {
 pub async fn execute(cli: Cli) -> Result<()> {
     match cli.command {
         Commands::Init(args) => init::execute(args).await,
-        Commands::Intent(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Intent).await
-        },
-        Commands::Invariant(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Invariant).await
-        },
-        Commands::Contract(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Contract).await
-        },
-        Commands::Algorithm(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Algorithm).await
-        },
-        Commands::Evaluation(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Evaluation).await
-        },
-        Commands::Pace(args) => artifact::execute(args, dna::services::ArtifactType::Pace).await,
-        Commands::Monitor(args) => {
-            artifact::execute(args, dna::services::ArtifactType::Monitor).await
-        },
+        Commands::Add(args) => artifact::execute_add(args).await,
+        Commands::Get(args) => artifact::execute_get(args).await,
+        Commands::Update(args) => artifact::execute_update(args).await,
+        Commands::Remove(args) => artifact::execute_remove(args).await,
         Commands::Search(args) => search::execute_search(args).await,
         Commands::List(args) => search::execute_list(args).await,
         Commands::Changes(args) => search::execute_changes(args).await,

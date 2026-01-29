@@ -35,7 +35,7 @@ mod search_integration_tests {
         }
 
         fn add_artifact(&self, artifact_type: &str, content: &str, metadata: &[(&str, &str)]) {
-            let mut args = vec![artifact_type, "add", content];
+            let mut args = vec!["add", artifact_type, content];
 
             for (key, value) in metadata {
                 args.push("--meta");
@@ -88,7 +88,7 @@ mod search_integration_tests {
         ctx.add_artifact("contract", "POST /auth/login API endpoint", &[]);
 
         ctx.cmd()
-            .args(&["search", "authentication", "--type", "intent"])
+            .args(&["search", "authentication", "--kind", "intent"])
             .assert()
             .success()
             .stdout(predicate::str::contains("intent"))

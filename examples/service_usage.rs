@@ -8,7 +8,7 @@
 use anyhow::Result;
 use dna::db::lance::LanceDatabase;
 use dna::embedding::EmbeddingProvider;
-use dna::services::{ArtifactService, ArtifactType, ContentFormat, SearchFilters, SearchService};
+use dna::services::{ArtifactService, ContentFormat, SearchFilters, SearchService};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tempfile::TempDir;
@@ -71,7 +71,7 @@ async fn main() -> Result<()> {
 
     let intent = artifact_service
         .add(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "Users should be able to create accounts with email verification.".to_string(),
             ContentFormat::Markdown,
             Some("Account Creation Intent".to_string()),
@@ -79,14 +79,14 @@ async fn main() -> Result<()> {
         )
         .await?;
     println!(
-        "   Added Intent: {} (ID: {})",
+        "   Added intent: {} (ID: {})",
         intent.name.as_ref().unwrap(),
         intent.id
     );
 
     let contract = artifact_service
         .add(
-            ArtifactType::Contract,
+            "contract".to_string(),
             r#"POST /api/users
 Request: { "email": string, "password": string }
 Response: { "id": string, "email": string, "verified": boolean }"#
@@ -100,14 +100,14 @@ Response: { "id": string, "email": string, "verified": boolean }"#
         )
         .await?;
     println!(
-        "   Added Contract: {} (ID: {})",
+        "   Added contract: {} (ID: {})",
         contract.name.as_ref().unwrap(),
         contract.id
     );
 
     let invariant = artifact_service
         .add(
-            ArtifactType::Invariant,
+            "invariant".to_string(),
             "Email addresses must be unique across all user accounts.".to_string(),
             ContentFormat::Markdown,
             Some("Email Uniqueness".to_string()),
@@ -115,7 +115,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
         )
         .await?;
     println!(
-        "   Added Invariant: {} (ID: {})\n",
+        "   Added invariant: {} (ID: {})\n",
         invariant.name.as_ref().unwrap(),
         invariant.id
     );
@@ -136,7 +136,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
             "   {}. [score: {:.4}] [{}] {}",
             i + 1,
             result.score,
-            result.artifact.artifact_type,
+            result.artifact.kind,
             result
                 .artifact
                 .name
@@ -151,6 +151,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
         .update(
             &intent.id,
             Some("Users should be able to create accounts with email verification. The verification email must be sent within 30 seconds of registration.".to_string()),
+            None,
             None,
             Some(HashMap::from([("priority".to_string(), "high".to_string())])),
         )
