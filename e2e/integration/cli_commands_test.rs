@@ -84,10 +84,10 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "add", "The system authenticates users via email"])
+            .args(&["add", "intent", "The system authenticates users via email"])
             .assert()
             .success()
-            .stdout(predicate::str::contains("Added intent"))
+            .stdout(predicate::str::contains("Added artifact"))
             .stdout(predicate::str::is_match(r"ID: [a-z2-9]{10}").unwrap());
     }
 
@@ -145,10 +145,10 @@ mod cli_integration_tests {
 
         for artifact_type in types {
             ctx.cmd()
-                .args(&[artifact_type, "add", &format!("Test {} content", artifact_type)])
+                .args(&["add", artifact_type, &format!("Test {} content", artifact_type)])
                 .assert()
                 .success()
-                .stdout(predicate::str::contains(format!("Added {}", artifact_type)));
+                .stdout(predicate::str::contains(format!("Added artifact")));
         }
     }
 
@@ -159,7 +159,7 @@ mod cli_integration_tests {
 
         let output = ctx
             .cmd()
-            .args(&["intent", "add", "Test content"])
+            .args(&["add", "intent", "Test content"])
             .output()
             .unwrap();
 
@@ -167,7 +167,7 @@ mod cli_integration_tests {
         let id = extract_id(&stdout);
 
         ctx.cmd()
-            .args(&["intent", "get", &id])
+            .args(&["get", &id])
             .assert()
             .success()
             .stdout(predicate::str::contains("Test content"))
@@ -180,7 +180,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "get", "nonexistent"])
+            .args(&["get", "nonexistent"])
             .assert()
             .failure()
             .stderr(predicate::str::contains("not found"));
@@ -193,20 +193,20 @@ mod cli_integration_tests {
 
         let output = ctx
             .cmd()
-            .args(&["intent", "add", "Original content"])
+            .args(&["add", "intent", "Original content"])
             .output()
             .unwrap();
 
         let id = extract_id(&String::from_utf8(output.stdout).unwrap());
 
         ctx.cmd()
-            .args(&["intent", "update", &id, "--content", "Updated content"])
+            .args(&["update", &id, "--content", "Updated content"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Updated"));
 
         ctx.cmd()
-            .args(&["intent", "get", &id])
+            .args(&["get", &id])
             .assert()
             .stdout(predicate::str::contains("Updated content"));
     }
@@ -216,11 +216,11 @@ mod cli_integration_tests {
         let ctx = TestContext::new();
         ctx.cmd().arg("init").assert().success();
 
-        let output = ctx.cmd().args(&["intent", "add", "Content"]).output().unwrap();
+        let output = ctx.cmd().args(&["add", "intent", "Content"]).output().unwrap();
         let id = extract_id(&String::from_utf8(output.stdout).unwrap());
 
         ctx.cmd()
-            .args(&["intent", "update", &id, "--meta", "status=reviewed"])
+            .args(&["update", &id, "--meta", "status=reviewed"])
             .assert()
             .success();
     }
@@ -230,17 +230,17 @@ mod cli_integration_tests {
         let ctx = TestContext::new();
         ctx.cmd().arg("init").assert().success();
 
-        let output = ctx.cmd().args(&["intent", "add", "Content"]).output().unwrap();
+        let output = ctx.cmd().args(&["add", "intent", "Content"]).output().unwrap();
         let id = extract_id(&String::from_utf8(output.stdout).unwrap());
 
         ctx.cmd()
-            .args(&["intent", "remove", &id])
+            .args(&["remove", &id])
             .assert()
             .success()
             .stdout(predicate::str::contains("Removed"));
 
         ctx.cmd()
-            .args(&["intent", "get", &id])
+            .args(&["get", &id])
             .assert()
             .failure();
     }
@@ -251,7 +251,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "remove", "nonexistent"])
+            .args(&["remove", "nonexistent"])
             .assert()
             .failure()
             .stderr(predicate::str::contains("not found"));
@@ -265,13 +265,13 @@ mod cli_integration_tests {
         // Add multiple artifacts
         for i in 0..5 {
             ctx.cmd()
-                .args(&["intent", "add", &format!("Content {}", i)])
+                .args(&["add", "intent", &format!("Content {}", i)])
                 .assert()
                 .success();
         }
 
         ctx.cmd()
-            .args(&["intent", "list"])
+            .args(&["list", "--kind", "intent"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Content 0"))
@@ -284,17 +284,17 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "add", "Content 1", "--meta", "priority=high"])
+            .args(&["add", "intent", "Content 1", "--meta", "priority=high"])
             .assert()
             .success();
 
         ctx.cmd()
-            .args(&["intent", "add", "Content 2", "--meta", "priority=low"])
+            .args(&["add", "intent", "Content 2", "--meta", "priority=low"])
             .assert()
             .success();
 
         ctx.cmd()
-            .args(&["intent", "list", "--filter", "priority=high"])
+            .args(&["list", "--kind", "intent", "--filter", "priority=high"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Content 1"))
@@ -308,12 +308,12 @@ mod cli_integration_tests {
 
         for i in 0..10 {
             ctx.cmd()
-                .args(&["intent", "add", &format!("Content {}", i)])
+                .args(&["add", "intent", &format!("Content {}", i)])
                 .assert()
                 .success();
         }
 
-        let output = ctx.cmd().args(&["intent", "list", "--limit", "3"]).output().unwrap();
+        let output = ctx.cmd().args(&["list", "--kind", "intent", "--limit", "3"]).output().unwrap();
 
         let stdout = String::from_utf8(output.stdout).unwrap();
         let line_count = stdout.lines().filter(|line| line.contains("Content")).count();
@@ -327,7 +327,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "list"])
+            .args(&["list", "--kind", "intent"])
             .assert()
             .success()
             .stdout(predicate::str::contains("No artifacts found"));
@@ -339,8 +339,8 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         // Add artifacts of different types
-        ctx.cmd().args(&["intent", "add", "Intent content"]).assert().success();
-        ctx.cmd().args(&["invariant", "add", "Invariant content"]).assert().success();
+        ctx.cmd().args(&["add", "intent", "Intent content"]).assert().success();
+        ctx.cmd().args(&["add", "invariant", "Invariant content"]).assert().success();
 
         // List all artifacts
         ctx.cmd()
@@ -396,7 +396,7 @@ mod cli_integration_tests {
         let ctx = TestContext::new();
         ctx.cmd().arg("init").assert().success();
 
-        ctx.cmd().args(&["intent", "add", "Content"]).assert().success();
+        ctx.cmd().args(&["add", "intent", "Content"]).assert().success();
 
         ctx.cmd()
             .args(&["reindex"])
@@ -410,7 +410,7 @@ mod cli_integration_tests {
         let ctx = TestContext::new();
         ctx.cmd().arg("init").assert().success();
 
-        ctx.cmd().args(&["intent", "add", "Content"]).assert().success();
+        ctx.cmd().args(&["add", "intent", "Content"]).assert().success();
 
         ctx.cmd()
             .args(&["reindex", "--force"])
@@ -423,7 +423,7 @@ mod cli_integration_tests {
         let ctx = TestContext::new();
 
         ctx.cmd()
-            .args(&["intent", "add", "Content"])
+            .args(&["add", "intent", "Content"])
             .assert()
             .failure()
             .stderr(predicate::str::contains("not initialized").or(predicate::str::contains("Run 'dna init'")));
@@ -456,7 +456,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "add", r#"{"key": "value"}"#, "--format", "json"])
+            .args(&["add", "intent", r#"{"key": "value"}"#, "--format", "json"])
             .assert()
             .success();
     }
@@ -467,7 +467,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["contract", "add", "key: value", "--format", "yaml"])
+            .args(&["add", "contract", "key: value", "--format", "yaml"])
             .assert()
             .success();
     }
@@ -478,7 +478,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["contract", "add", "openapi: 3.0.0", "--format", "openapi"])
+            .args(&["add", "contract", "openapi: 3.0.0", "--format", "openapi"])
             .assert()
             .success();
     }
@@ -491,7 +491,7 @@ mod cli_integration_tests {
         let unicode_content = "Hello 世界 🌍 مرحبا";
 
         ctx.cmd()
-            .args(&["intent", "add", unicode_content])
+            .args(&["add", "intent", unicode_content])
             .assert()
             .success();
     }
@@ -504,7 +504,7 @@ mod cli_integration_tests {
         let large_content = "x".repeat(10_000);
 
         ctx.cmd()
-            .args(&["intent", "add", &large_content])
+            .args(&["add", "intent", &large_content])
             .assert()
             .success();
     }
@@ -515,7 +515,7 @@ mod cli_integration_tests {
         ctx.cmd().arg("init").assert().success();
 
         ctx.cmd()
-            .args(&["intent", "add", "Content", "--name", "test-name_123"])
+            .args(&["add", "intent", "Content", "--name", "test-name_123"])
             .assert()
             .success();
     }
@@ -551,7 +551,7 @@ mod cli_integration_tests {
                 let handle = thread::spawn(move || {
                     let mut cmd = Command::cargo_bin("dna").unwrap();
                     cmd.current_dir(root_clone);
-                    cmd.args(&["intent", "add", &format!("Concurrent content {}", i)])
+                    cmd.args(&["add", "intent", &format!("Concurrent content {}", i)])
                         .assert()
                         .success();
                 });
@@ -562,7 +562,7 @@ mod cli_integration_tests {
                 handle.join().unwrap();
             }
 
-            let output = ctx.cmd().args(&["intent", "list"]).output().unwrap();
+            let output = ctx.cmd().args(&["list", "--kind", "intent"]).output().unwrap();
             let stdout = String::from_utf8(output.stdout).unwrap();
             let count = stdout.lines().filter(|line| line.contains("Concurrent")).count();
 

@@ -1,5 +1,5 @@
 use super::{schema, Database};
-use crate::services::{Artifact, ArtifactType, ContentFormat, SearchFilters, SearchResult};
+use crate::services::{Artifact, ContentFormat, SearchFilters, SearchResult};
 use anyhow::{Context, Result};
 use arrow_array::{
     cast::AsArray, Array, FixedSizeListArray, Float32Array, RecordBatch, RecordBatchIterator,
@@ -117,7 +117,7 @@ impl LanceDatabase {
 
         for i in 0..batch.num_rows() {
             let id = ids.value(i).to_string();
-            let artifact_type = ArtifactType::from_str(types.value(i))?;
+            let kind = types.value(i).to_string();
             let name = if names.is_null(i) {
                 None
             } else {
@@ -143,7 +143,7 @@ impl LanceDatabase {
 
             artifacts.push(Artifact {
                 id,
-                artifact_type,
+                kind,
                 name,
                 content,
                 format,
@@ -268,8 +268,8 @@ impl Database for LanceDatabase {
         // Build filter string
         let mut filter_parts: Vec<String> = Vec::new();
 
-        if let Some(artifact_type) = &filters.artifact_type {
-            filter_parts.push(format!("type = '{}'", artifact_type));
+        if let Some(kind) = &filters.kind {
+            filter_parts.push(format!("kind = '{}'", kind.replace('\'', "''")));
         }
 
         if let Some(after) = &filters.after {
@@ -337,8 +337,8 @@ impl Database for LanceDatabase {
         // Build filter string
         let mut filter_parts: Vec<String> = Vec::new();
 
-        if let Some(artifact_type) = &filters.artifact_type {
-            filter_parts.push(format!("type = '{}'", artifact_type));
+        if let Some(kind) = &filters.kind {
+            filter_parts.push(format!("kind = '{}'", kind.replace('\'', "''")));
         }
 
         if let Some(after) = &filters.after {
@@ -387,13 +387,13 @@ impl Database for LanceDatabase {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{Artifact, ArtifactType, ContentFormat};
+    use crate::services::{Artifact, ContentFormat};
     use std::collections::HashMap;
     use tempfile::TempDir;
 
     fn create_test_artifact(content: &str, embedding: Vec<f32>) -> Artifact {
         let mut artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             content.to_string(),
             ContentFormat::Markdown,
             Some(format!("test-{}", content)),
@@ -446,7 +446,7 @@ mod tests {
         let retrieved = retrieved.unwrap();
         assert_eq!(retrieved.id, id);
         assert_eq!(retrieved.content, "hello world");
-        assert_eq!(retrieved.artifact_type, ArtifactType::Intent);
+        assert_eq!(retrieved.kind, "intent");
     }
 
     // TDD: Insert then list should include the artifact
@@ -473,20 +473,19 @@ mod tests {
         );
     }
 
-    // TDD: List with type filter should filter results
+    // TDD: List with kind filter should filter results
     #[tokio::test]
-    async fn list_filters_by_artifact_type() {
+    async fn list_filters_by_kind() {
         let temp_dir = TempDir::new().unwrap();
         let db_path = temp_dir.path().join("test.lance");
         let db = LanceDatabase::new(db_path.to_str().unwrap()).await.unwrap();
         db.init().await.unwrap();
 
-        let mut intent = create_test_artifact("intent content", create_embedding(0.1));
-        intent.artifact_type = ArtifactType::Intent;
+        let intent = create_test_artifact("intent content", create_embedding(0.1));
         let intent_id = intent.id.clone();
 
         let mut contract = Artifact::new(
-            ArtifactType::Contract,
+            "contract".to_string(),
             "contract content".to_string(),
             ContentFormat::Json,
             None,
@@ -499,12 +498,12 @@ mod tests {
         db.insert(&contract).await.unwrap();
 
         let filters = SearchFilters {
-            artifact_type: Some(ArtifactType::Intent),
+            kind: Some("intent".to_string()),
             ..Default::default()
         };
         let results = db.list(filters).await.unwrap();
 
-        assert_eq!(results.len(), 1, "Expected only Intent artifacts");
+        assert_eq!(results.len(), 1, "Expected only intent artifacts");
         assert_eq!(results[0].id, intent_id);
     }
 

@@ -7,7 +7,7 @@ use axum::{
     Json, Router,
 };
 use chrono::{DateTime, Utc};
-use dna::services::{ArtifactType, ContentFormat, SearchFilters, ServiceError};
+use dna::services::{ContentFormat, SearchFilters, ServiceError};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
@@ -17,8 +17,7 @@ use crate::state::AppState;
 
 #[derive(Deserialize)]
 pub struct ListQuery {
-    #[serde(rename = "type")]
-    artifact_type: Option<String>,
+    kind: Option<String>,
     limit: Option<usize>,
     after: Option<String>,
     before: Option<String>,
@@ -27,15 +26,13 @@ pub struct ListQuery {
 #[derive(Deserialize)]
 pub struct SearchBody {
     query: String,
-    #[serde(rename = "type")]
-    artifact_type: Option<String>,
+    kind: Option<String>,
     limit: Option<usize>,
 }
 
 #[derive(Deserialize)]
 pub struct CreateBody {
-    #[serde(rename = "type")]
-    artifact_type: String,
+    kind: String,
     content: String,
     format: Option<String>,
     name: Option<String>,
@@ -46,6 +43,7 @@ pub struct CreateBody {
 pub struct UpdateBody {
     content: Option<String>,
     name: Option<String>,
+    kind: Option<String>,
     metadata: Option<HashMap<String, String>>,
 }
 
@@ -79,11 +77,6 @@ fn parse_datetime(s: &str) -> Result<DateTime<Utc>, String> {
         .map_err(|e| format!("Invalid datetime '{}': {}", s, e))
 }
 
-fn parse_artifact_type(s: &str) -> Result<ArtifactType, String> {
-    s.parse::<ArtifactType>()
-        .map_err(|e| format!("Invalid artifact type '{}': {}", s, e))
-}
-
 fn parse_content_format(s: &str) -> Result<ContentFormat, String> {
     s.parse::<ContentFormat>()
         .map_err(|e| format!("Invalid content format '{}': {}", s, e))
@@ -97,16 +90,6 @@ async fn list_artifacts(
     State(state): State<AppState>,
     Query(query): Query<ListQuery>,
 ) -> axum::response::Response {
-    let artifact_type = match query.artifact_type {
-        Some(ref t) => match parse_artifact_type(t) {
-            Ok(at) => Some(at),
-            Err(msg) => {
-                return error_response(axum::http::StatusCode::BAD_REQUEST, "bad_request", &msg)
-            },
-        },
-        None => None,
-    };
-
     let after = match query.after {
         Some(ref s) => match parse_datetime(s) {
             Ok(dt) => Some(dt),
@@ -128,7 +111,7 @@ async fn list_artifacts(
     };
 
     let filters = SearchFilters {
-        artifact_type,
+        kind: query.kind,
         after,
         before,
         limit: query.limit,
@@ -149,13 +132,6 @@ async fn create_artifact(
     State(state): State<AppState>,
     Json(body): Json<CreateBody>,
 ) -> axum::response::Response {
-    let artifact_type = match parse_artifact_type(&body.artifact_type) {
-        Ok(at) => at,
-        Err(msg) => {
-            return error_response(axum::http::StatusCode::BAD_REQUEST, "bad_request", &msg)
-        },
-    };
-
     let format = match body.format {
         Some(ref f) => match parse_content_format(f) {
             Ok(cf) => cf,
@@ -170,7 +146,7 @@ async fn create_artifact(
 
     match state
         .artifact_service
-        .add(artifact_type, body.content, format, body.name, metadata)
+        .add(body.kind, body.content, format, body.name, metadata)
         .await
     {
         Ok(artifact) => (axum::http::StatusCode::CREATED, Json(artifact)).into_response(),
@@ -208,7 +184,7 @@ async fn update_artifact(
 ) -> axum::response::Response {
     match state
         .artifact_service
-        .update(&id, body.content, body.name, body.metadata)
+        .update(&id, body.content, body.name, body.kind, body.metadata)
         .await
     {
         Ok(artifact) => Json(artifact).into_response(),
@@ -246,18 +222,8 @@ async fn search_artifacts(
     State(state): State<AppState>,
     Json(body): Json<SearchBody>,
 ) -> axum::response::Response {
-    let artifact_type = match body.artifact_type {
-        Some(ref t) => match parse_artifact_type(t) {
-            Ok(at) => Some(at),
-            Err(msg) => {
-                return error_response(axum::http::StatusCode::BAD_REQUEST, "bad_request", &msg)
-            },
-        },
-        None => None,
-    };
-
     let filters = SearchFilters {
-        artifact_type,
+        kind: body.kind,
         limit: body.limit,
         ..Default::default()
     };

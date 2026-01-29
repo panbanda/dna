@@ -171,7 +171,7 @@ mod tests {
     #[tokio::test]
     async fn search_returns_results_from_db() {
         let artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "result content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -200,7 +200,7 @@ mod tests {
     #[tokio::test]
     async fn check_embedding_consistency_returns_mismatched_ids() {
         let mut artifact1 = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -210,7 +210,7 @@ mod tests {
         artifact1.id = "matching".to_string();
 
         let mut artifact2 = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -232,7 +232,7 @@ mod tests {
     #[tokio::test]
     async fn check_embedding_consistency_empty_when_all_match() {
         let artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,

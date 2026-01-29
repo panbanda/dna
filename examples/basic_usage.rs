@@ -10,7 +10,7 @@
 
 use anyhow::Result;
 use dna::db::{lance::LanceDatabase, Database};
-use dna::services::{Artifact, ArtifactType, ContentFormat, SearchFilters};
+use dna::services::{Artifact, ContentFormat, SearchFilters};
 use std::collections::HashMap;
 use tempfile::TempDir;
 
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
         db.insert(artifact).await?;
         println!(
             "   Added: [{}] {}",
-            artifact.artifact_type,
+            artifact.kind,
             artifact.name.as_deref().unwrap_or("unnamed"),
         );
     }
@@ -43,13 +43,13 @@ async fn main() -> Result<()> {
     let all_artifacts = db.list(SearchFilters::default()).await?;
     println!("   Found {} artifacts\n", all_artifacts.len());
 
-    println!("4. Filtering by artifact type (Intent only)...");
+    println!("4. Filtering by kind (intent only)...");
     let intent_filter = SearchFilters {
-        artifact_type: Some(ArtifactType::Intent),
+        kind: Some("intent".to_string()),
         ..Default::default()
     };
     let intents = db.list(intent_filter).await?;
-    println!("   Found {} Intent artifacts\n", intents.len());
+    println!("   Found {} intent artifacts\n", intents.len());
 
     println!("5. Semantic search for 'authentication'...");
     let query_embedding = create_auth_like_embedding();
@@ -68,7 +68,7 @@ async fn main() -> Result<()> {
             "   {}. [score: {:.4}] {} - {}",
             i + 1,
             result.score,
-            result.artifact.artifact_type,
+            result.artifact.kind,
             result.artifact.name.as_deref().unwrap_or("unnamed")
         );
     }
@@ -115,21 +115,21 @@ async fn main() -> Result<()> {
 fn create_sample_artifacts() -> Vec<Artifact> {
     vec![
         create_artifact(
-            ArtifactType::Intent,
+            "intent",
             "User Authentication Intent",
             "Users must be able to securely authenticate using email and password.",
             create_auth_like_embedding(),
             HashMap::from([("domain".to_string(), "auth".to_string())]),
         ),
         create_artifact(
-            ArtifactType::Invariant,
+            "invariant",
             "Password Security Invariant",
             "Passwords must be hashed using bcrypt with a minimum cost factor of 12.",
             create_security_like_embedding(),
             HashMap::from([("domain".to_string(), "auth".to_string())]),
         ),
         create_artifact(
-            ArtifactType::Contract,
+            "contract",
             "Login API Contract",
             "POST /api/v1/auth/login accepts {email, password} and returns {token, user}.",
             create_api_like_embedding(),
@@ -142,14 +142,14 @@ fn create_sample_artifacts() -> Vec<Artifact> {
 }
 
 fn create_artifact(
-    artifact_type: ArtifactType,
+    kind: &str,
     name: &str,
     content: &str,
     embedding: Vec<f32>,
     metadata: HashMap<String, String>,
 ) -> Artifact {
     let mut artifact = Artifact::new(
-        artifact_type,
+        kind.to_string(),
         content.to_string(),
         ContentFormat::Markdown,
         Some(name.to_string()),

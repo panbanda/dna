@@ -3,14 +3,14 @@
 /// This module provides reusable test data, mock objects, and helper functions
 /// to facilitate comprehensive testing across the DNA codebase.
 
-use dna::services::{Artifact, ArtifactType, ContentFormat};
+use dna::services::{Artifact, ContentFormat};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use tempfile::TempDir;
 
 /// Test artifact builder for creating fixtures
 pub struct TestArtifactBuilder {
-    artifact_type: ArtifactType,
+    kind: String,
     name: Option<String>,
     content: String,
     format: ContentFormat,
@@ -18,9 +18,9 @@ pub struct TestArtifactBuilder {
 }
 
 impl TestArtifactBuilder {
-    pub fn new(artifact_type: ArtifactType) -> Self {
+    pub fn new(kind: &str) -> Self {
         Self {
-            artifact_type,
+            kind: kind.to_string(),
             name: None,
             content: String::from("Test artifact content"),
             format: ContentFormat::Markdown,
@@ -50,7 +50,7 @@ impl TestArtifactBuilder {
 
     pub fn build(self) -> Artifact {
         Artifact::new(
-            self.artifact_type,
+            self.kind,
             self.content,
             self.format,
             self.name,
@@ -125,7 +125,7 @@ pub mod samples {
     use super::*;
 
     pub fn intent_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Intent)
+        TestArtifactBuilder::new("intent")
             .with_name("user-authentication")
             .with_content("The system authenticates users via email and password")
             .with_metadata("domain", "auth")
@@ -134,7 +134,7 @@ pub mod samples {
     }
 
     pub fn invariant_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Invariant)
+        TestArtifactBuilder::new("invariant")
             .with_name("valid-payment")
             .with_content("Users must have a valid payment method before completing checkout")
             .with_metadata("domain", "checkout")
@@ -143,7 +143,7 @@ pub mod samples {
     }
 
     pub fn contract_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Contract)
+        TestArtifactBuilder::new("contract")
             .with_name("payment-api")
             .with_content("POST /api/payments returns 201 on success with payment ID")
             .with_format(ContentFormat::OpenApi)
@@ -152,7 +152,7 @@ pub mod samples {
     }
 
     pub fn algorithm_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Algorithm)
+        TestArtifactBuilder::new("algorithm")
             .with_name("price-calculation")
             .with_content("Price = base_price * quantity * (1 - discount_rate)")
             .with_metadata("domain", "pricing")
@@ -160,7 +160,7 @@ pub mod samples {
     }
 
     pub fn evaluation_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Evaluation)
+        TestArtifactBuilder::new("evaluation")
             .with_name("checkout-success")
             .with_content("Given valid cart, when checkout, then order created")
             .with_metadata("domain", "checkout")
@@ -168,7 +168,7 @@ pub mod samples {
     }
 
     pub fn pace_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Pace)
+        TestArtifactBuilder::new("pace")
             .with_name("payment-api-stability")
             .with_content("Payment API contracts require 2-week deprecation notice")
             .with_metadata("service", "payment-service")
@@ -176,7 +176,7 @@ pub mod samples {
     }
 
     pub fn monitor_artifact() -> Artifact {
-        TestArtifactBuilder::new(ArtifactType::Monitor)
+        TestArtifactBuilder::new("monitor")
             .with_name("api-latency")
             .with_content("P99 API latency < 200ms")
             .with_metadata("service", "all")
@@ -184,7 +184,7 @@ pub mod samples {
             .build()
     }
 
-    pub fn all_artifact_types() -> Vec<Artifact> {
+    pub fn all_kinds() -> Vec<Artifact> {
         vec![
             intent_artifact(),
             invariant_artifact(),
@@ -264,12 +264,12 @@ mod tests {
 
     #[test]
     fn test_artifact_builder() {
-        let artifact = TestArtifactBuilder::new(ArtifactType::Intent)
+        let artifact = TestArtifactBuilder::new("intent")
             .with_name("test")
             .with_content("Test content")
             .build();
 
-        assert_eq!(artifact.artifact_type, ArtifactType::Intent);
+        assert_eq!(artifact.kind, "intent");
         assert_eq!(artifact.name.unwrap(), "test");
         assert_eq!(artifact.content, "Test content");
     }
@@ -310,8 +310,8 @@ mod tests {
     }
 
     #[test]
-    fn test_samples_all_types() {
-        let artifacts = samples::all_artifact_types();
+    fn test_samples_all_kinds() {
+        let artifacts = samples::all_kinds();
         assert_eq!(artifacts.len(), 7);
     }
 }

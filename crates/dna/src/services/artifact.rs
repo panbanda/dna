@@ -21,7 +21,7 @@ impl ArtifactService {
     /// Add a new artifact
     pub async fn add(
         &self,
-        artifact_type: ArtifactType,
+        kind: String,
         content: String,
         format: ContentFormat,
         name: Option<String>,
@@ -29,7 +29,7 @@ impl ArtifactService {
     ) -> Result<Artifact> {
         // Create artifact with embedding model info
         let mut artifact = Artifact::new(
-            artifact_type,
+            slugify_kind(&kind),
             content.clone(),
             format,
             name,
@@ -65,6 +65,7 @@ impl ArtifactService {
         id: &str,
         content: Option<String>,
         name: Option<String>,
+        kind: Option<String>,
         metadata: Option<HashMap<String, String>>,
     ) -> Result<Artifact, ServiceError> {
         // Get existing artifact
@@ -84,6 +85,10 @@ impl ArtifactService {
 
         if let Some(new_name) = name {
             artifact.name = Some(new_name);
+        }
+
+        if let Some(new_kind) = kind {
+            artifact.kind = slugify_kind(&new_kind);
         }
 
         if let Some(new_metadata) = metadata {
@@ -260,7 +265,7 @@ mod tests {
 
         let artifact = service
             .add(
-                ArtifactType::Intent,
+                "intent".to_string(),
                 "test content".to_string(),
                 ContentFormat::Markdown,
                 Some("test-name".to_string()),
@@ -269,6 +274,7 @@ mod tests {
             .await
             .unwrap();
 
+        assert_eq!(artifact.kind, "intent");
         assert_eq!(artifact.content, "test content");
         assert_eq!(artifact.name, Some("test-name".to_string()));
         assert_eq!(artifact.embedding, Some(vec![0.1, 0.2, 0.3]));
@@ -276,6 +282,26 @@ mod tests {
         // Verify it was inserted
         let stored = db.get(&artifact.id).await.unwrap();
         assert!(stored.is_some());
+    }
+
+    #[tokio::test]
+    async fn add_slugifies_kind() {
+        let db = Arc::new(TestDatabase::new());
+        let embedding = Arc::new(TestEmbedding::new("test-model", vec![0.1]));
+        let service = ArtifactService::new(db, embedding);
+
+        let artifact = service
+            .add(
+                "My Custom Type".to_string(),
+                "content".to_string(),
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(artifact.kind, "my-custom-type");
     }
 
     #[tokio::test]
@@ -291,7 +317,7 @@ mod tests {
     #[tokio::test]
     async fn remove_returns_true_when_exists() {
         let artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -321,7 +347,7 @@ mod tests {
     #[tokio::test]
     async fn list_returns_all_artifacts() {
         let a1 = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "one".to_string(),
             ContentFormat::Markdown,
             None,
@@ -329,7 +355,7 @@ mod tests {
             "model".to_string(),
         );
         let a2 = Artifact::new(
-            ArtifactType::Contract,
+            "contract".to_string(),
             "two".to_string(),
             ContentFormat::Json,
             None,
@@ -351,7 +377,7 @@ mod tests {
     #[tokio::test]
     async fn update_changes_content_and_reembeds() {
         let artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "old content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -365,7 +391,13 @@ mod tests {
         let service = ArtifactService::new(db, embedding);
 
         let updated = service
-            .update(&artifact_id, Some("new content".to_string()), None, None)
+            .update(
+                &artifact_id,
+                Some("new content".to_string()),
+                None,
+                None,
+                None,
+            )
             .await
             .unwrap();
 
@@ -377,7 +409,7 @@ mod tests {
     #[tokio::test]
     async fn update_only_name_does_not_reembed() {
         let mut artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -392,7 +424,7 @@ mod tests {
         let service = ArtifactService::new(db, embedding);
 
         let updated = service
-            .update(&artifact_id, None, Some("new-name".to_string()), None)
+            .update(&artifact_id, None, Some("new-name".to_string()), None, None)
             .await
             .unwrap();
 
@@ -402,13 +434,67 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_kind_changes_kind() {
+        let artifact = Artifact::new(
+            "intent".to_string(),
+            "content".to_string(),
+            ContentFormat::Markdown,
+            None,
+            HashMap::new(),
+            "model".to_string(),
+        );
+        let artifact_id = artifact.id.clone();
+
+        let db = Arc::new(TestDatabase::with_artifact(artifact));
+        let embedding = Arc::new(TestEmbedding::new("model", vec![]));
+        let service = ArtifactService::new(db, embedding);
+
+        let updated = service
+            .update(&artifact_id, None, None, Some("contract".to_string()), None)
+            .await
+            .unwrap();
+
+        assert_eq!(updated.kind, "contract");
+    }
+
+    #[tokio::test]
+    async fn update_kind_slugifies() {
+        let artifact = Artifact::new(
+            "intent".to_string(),
+            "content".to_string(),
+            ContentFormat::Markdown,
+            None,
+            HashMap::new(),
+            "model".to_string(),
+        );
+        let artifact_id = artifact.id.clone();
+
+        let db = Arc::new(TestDatabase::with_artifact(artifact));
+        let embedding = Arc::new(TestEmbedding::new("model", vec![]));
+        let service = ArtifactService::new(db, embedding);
+
+        let updated = service
+            .update(
+                &artifact_id,
+                None,
+                None,
+                Some("My Custom Kind".to_string()),
+                None,
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(updated.kind, "my-custom-kind");
+    }
+
+    #[tokio::test]
     async fn update_nonexistent_returns_error() {
         let db = Arc::new(TestDatabase::new());
         let embedding = Arc::new(TestEmbedding::new("test-model", vec![]));
         let service = ArtifactService::new(db, embedding);
 
         let result = service
-            .update("nonexistent", Some("content".to_string()), None, None)
+            .update("nonexistent", Some("content".to_string()), None, None, None)
             .await;
 
         assert!(result.is_err());
@@ -432,7 +518,7 @@ mod tests {
     #[tokio::test]
     async fn reindex_updates_all_artifacts() {
         let a1 = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content one".to_string(),
             ContentFormat::Markdown,
             None,
@@ -440,7 +526,7 @@ mod tests {
             "old-model".to_string(),
         );
         let a2 = Artifact::new(
-            ArtifactType::Contract,
+            "contract".to_string(),
             "content two".to_string(),
             ContentFormat::Json,
             None,
@@ -475,7 +561,7 @@ mod tests {
         initial_metadata.insert("key1".to_string(), "value1".to_string());
 
         let artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "content".to_string(),
             ContentFormat::Markdown,
             None,
@@ -492,7 +578,7 @@ mod tests {
         new_metadata.insert("key2".to_string(), "value2".to_string());
 
         let updated = service
-            .update(&artifact_id, None, None, Some(new_metadata))
+            .update(&artifact_id, None, None, None, Some(new_metadata))
             .await
             .unwrap();
 

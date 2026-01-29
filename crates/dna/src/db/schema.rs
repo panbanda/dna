@@ -10,7 +10,7 @@ const EMBEDDING_DIMENSION: i32 = 384;
 pub fn create_schema() -> Arc<Schema> {
     Arc::new(Schema::new(vec![
         Field::new("id", DataType::Utf8, false),
-        Field::new("type", DataType::Utf8, false),
+        Field::new("kind", DataType::Utf8, false),
         Field::new("name", DataType::Utf8, true),
         Field::new("content", DataType::Utf8, false),
         Field::new("format", DataType::Utf8, false),
@@ -45,10 +45,10 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
         artifacts.iter().map(|a| a.id.as_str()).collect::<Vec<_>>(),
     ));
 
-    let types: ArrayRef = Arc::new(StringArray::from(
+    let kinds: ArrayRef = Arc::new(StringArray::from(
         artifacts
             .iter()
-            .map(|a| a.artifact_type.to_string())
+            .map(|a| a.kind.as_str())
             .collect::<Vec<_>>(),
     ));
 
@@ -118,7 +118,7 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
         schema,
         vec![
             ids,
-            types,
+            kinds,
             names,
             contents,
             formats,
@@ -135,7 +135,7 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{Artifact, ArtifactType, ContentFormat};
+    use crate::services::{Artifact, ContentFormat};
     use std::collections::HashMap;
 
     #[test]
@@ -144,7 +144,7 @@ mod tests {
         let field_names: Vec<&str> = schema.fields().iter().map(|f| f.name().as_str()).collect();
 
         assert!(field_names.contains(&"id"));
-        assert!(field_names.contains(&"type"));
+        assert!(field_names.contains(&"kind"));
         assert!(field_names.contains(&"name"));
         assert!(field_names.contains(&"content"));
         assert!(field_names.contains(&"format"));
@@ -189,7 +189,7 @@ mod tests {
     #[test]
     fn artifacts_to_batch_single_artifact() {
         let mut artifact = Artifact::new(
-            ArtifactType::Intent,
+            "intent".to_string(),
             "Test content".to_string(),
             ContentFormat::Markdown,
             Some("test-name".to_string()),
@@ -208,7 +208,7 @@ mod tests {
         let artifacts: Vec<Artifact> = (0..5)
             .map(|i| {
                 let mut a = Artifact::new(
-                    ArtifactType::Intent,
+                    "intent".to_string(),
                     format!("Content {}", i),
                     ContentFormat::Markdown,
                     None,
@@ -237,7 +237,7 @@ mod tests {
         metadata.insert("key".to_string(), "value".to_string());
 
         let mut artifact = Artifact::new(
-            ArtifactType::Contract,
+            "contract".to_string(),
             "Test".to_string(),
             ContentFormat::Json,
             None,
