@@ -466,6 +466,14 @@ pub static TEMPLATE_INTENT: Template = Template {
             slug: "compliance",
             description: "Regulatory or legal requirement: one obligation from GDPR, HIPAA, PCI-DSS, SOC2, etc. Ex: 'PII must be deletable within 30 days of request'",
         },
+        TemplateKind {
+            slug: "constraint",
+            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
+        },
+        TemplateKind {
+            slug: "requirement",
+            description: "Stakeholder or client requirement: one contractual or business need from customers, partners, or internal teams. Ex: 'Enterprise tier requires SSO integration'",
+        },
     ],
 };
 
@@ -1090,7 +1098,9 @@ mod tests {
             assert!(slugs.contains(&"integration"));
             assert!(slugs.contains(&"reporting"));
             assert!(slugs.contains(&"compliance"));
-            assert_eq!(slugs.len(), 11);
+            assert!(slugs.contains(&"constraint"));
+            assert!(slugs.contains(&"requirement"));
+            assert_eq!(slugs.len(), 13);
         }
 
         #[test]
