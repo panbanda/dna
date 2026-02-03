@@ -402,6 +402,86 @@ pub struct ProjectConfig {
     pub kinds: KindsConfig,
 }
 
+/// A kind definition within a template
+#[derive(Debug, Clone)]
+pub struct TemplateKind {
+    pub slug: &'static str,
+    pub description: &'static str,
+}
+
+/// A project template defining a set of artifact kinds
+#[derive(Debug, Clone)]
+pub struct Template {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub kinds: &'static [TemplateKind],
+}
+
+/// Intent template: truth-driven governance based on intent-starter pattern
+pub static TEMPLATE_INTENT: Template = Template {
+    name: "intent",
+    description: "Truth-driven governance for system identity",
+    kinds: &[
+        TemplateKind {
+            slug: "intent",
+            description: "Declarative 'must' statement: one user-observable outcome or rule. No implementation. Ex: 'Orders must not ship until payment confirmed'",
+        },
+        TemplateKind {
+            slug: "invariant",
+            description: "Always-true property: one verifiable constraint. Ex: 'Account balance >= 0'",
+        },
+        TemplateKind {
+            slug: "contract",
+            description: "External promise: one endpoint, event, or interface. Ex: 'POST /orders returns 201 with order_id'",
+        },
+        TemplateKind {
+            slug: "algorithm",
+            description: "Computation rule: one formula or threshold. Ex: 'discount = 0.1 when qty > 10'",
+        },
+        TemplateKind {
+            slug: "evaluation",
+            description: "Executable test: one scenario or property. Ex: 'Given expired token, then 401'",
+        },
+        TemplateKind {
+            slug: "pace",
+            description: "Change governance: one concern as fast/medium/slow. Ex: 'auth model: slow'",
+        },
+        TemplateKind {
+            slug: "monitor",
+            description: "Operational observable: one metric or SLO. Ex: 'p99_latency < 200ms'",
+        },
+        TemplateKind {
+            slug: "glossary",
+            description: "Domain term: one concept with precise meaning. Ex: 'ICP: B2B SaaS, 50-500 employees, Series A+'",
+        },
+        TemplateKind {
+            slug: "integration",
+            description: "External binding: one provider, API, or SLA term. Use --label provider=x. Ex: 'Payment provider: Stripe'",
+        },
+        TemplateKind {
+            slug: "reporting",
+            description: "Reportable requirement: one business or compliance query. Ex: 'Revenue by segment must be queryable'",
+        },
+        TemplateKind {
+            slug: "compliance",
+            description: "Regulatory or legal requirement: one obligation from GDPR, HIPAA, PCI-DSS, SOC2, etc. Ex: 'PII must be deletable within 30 days of request'",
+        },
+    ],
+};
+
+/// All available templates
+pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT];
+
+/// Get a template by name
+pub fn get_template(name: &str) -> Option<&'static Template> {
+    TEMPLATES.iter().find(|t| t.name == name).copied()
+}
+
+/// List all available template names
+pub fn list_templates() -> Vec<&'static str> {
+    TEMPLATES.iter().map(|t| t.name).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

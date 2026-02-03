@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Args;
-use dna::services::ConfigService;
+use dna::services::{get_template, list_templates, ConfigService};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -9,9 +9,9 @@ pub struct InitArgs {
     #[arg(long)]
     model: Option<String>,
 
-    /// Initialize with intent-flow artifact kinds (intent, invariant, contract, algorithm, evaluation, pace, monitor)
-    #[arg(long)]
-    intent_flow: bool,
+    /// Initialize with a predefined template (e.g., 'intent')
+    #[arg(long, value_name = "NAME")]
+    template: Option<String>,
 
     /// Project root directory
     #[arg(default_value = ".")]
@@ -44,10 +44,19 @@ pub async fn execute(args: InitArgs) -> Result<()> {
         config_service.init()?
     };
 
-    // Apply intent-flow kinds if requested
-    let config = if args.intent_flow {
-        let updated = config_service.init_intent_flow()?;
-        println!("  Intent-flow kinds registered:");
+    // Apply template if requested
+    let config = if let Some(template_name) = args.template {
+        let template = get_template(&template_name).ok_or_else(|| {
+            let available = list_templates().join(", ");
+            anyhow::anyhow!(
+                "Unknown template '{}'. Available templates: {}",
+                template_name,
+                available
+            )
+        })?;
+
+        let updated = config_service.init_from_template(template)?;
+        println!("  Template '{}' applied:", template.name);
         for kind in &updated.kinds.definitions {
             println!("    {} - {}", kind.slug, kind.description);
         }
