@@ -27,3 +27,4 @@ Thumbs.db
 *.profraw
 coverage/
 tarpaulin-report.html
+.claude-flow/
