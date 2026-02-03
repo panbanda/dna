@@ -127,14 +127,14 @@ flowchart LR
 
 ### Agentic Template
 
-Truth artifacts for AI agent safety and governance:
+Truth artifacts for building and evaluating AI systems:
 
 ```mermaid
 flowchart LR
-    subgraph discovery["Governance Agents"]
-        hunter["Threat Hunter"]
-        policy["Policy"]
-        benchmarker["Benchmarker"]
+    subgraph discovery["Discovery Agents"]
+        threat_hunter["Threat Hunter"]
+        policy_writer["Policy Writer"]
+        eval_designer["Eval Designer"]
     end
 
     subgraph dna["DNA Layer"]
@@ -145,35 +145,40 @@ flowchart LR
         governance(["governance"])
     end
 
-    subgraph coding["Implementation Agents"]
-        safety["Safety Coder"]
-        redteam["Red Team"]
-        monitor["Monitor"]
+    subgraph building["Building Agents"]
+        prompt_eng["Prompt Engineer"]
+        integrator["LLM Integrator"]
+        guardrails["Guardrails Dev"]
     end
 
-    subgraph impl["AI Systems"]
-        llm(["LLM Agent"])
-        rag(["RAG"])
-        any(["any..."])
+    subgraph testing["Testing Agents"]
+        eval_runner["Eval Runner"]
+        red_team["Red Team"]
+        benchmark["Benchmarker"]
     end
 
-    subgraph increments["Increments"]
-        report(["Safety Report"])
+    subgraph outputs["Outputs"]
+        agent(["AI Agent"])
+        eval_report(["Eval Report"])
+        safety_score(["Safety Score"])
     end
 
     discovery -.->|updates| dna
 
-    dna -->|context / mcp| safety
-    dna -->|context / mcp| redteam
-    dna -->|context / mcp| monitor
+    dna -->|context / mcp| building
+    dna -->|context / mcp| testing
 
-    safety ==>|produces| impl
-    redteam ==>|validates| report
-    monitor ==>|enforces| report
+    prompt_eng ==>|produces| agent
+    integrator ==>|produces| agent
+    guardrails ==>|produces| agent
 
-    style hunter fill:#db2777,stroke:#be185d,color:#fff
-    style policy fill:#db2777,stroke:#be185d,color:#fff
-    style benchmarker fill:#db2777,stroke:#be185d,color:#fff
+    eval_runner ==>|produces| eval_report
+    red_team ==>|produces| safety_score
+    benchmark ==>|produces| eval_report
+
+    style threat_hunter fill:#db2777,stroke:#be185d,color:#fff
+    style policy_writer fill:#db2777,stroke:#be185d,color:#fff
+    style eval_designer fill:#db2777,stroke:#be185d,color:#fff
 
     style behavior fill:#60a5fa,stroke:#2563eb,color:#000
     style boundary fill:#f87171,stroke:#dc2626,color:#000
@@ -181,15 +186,17 @@ flowchart LR
     style evaluation fill:#60a5fa,stroke:#2563eb,color:#000
     style governance fill:#a78bfa,stroke:#7c3aed,color:#000
 
-    style safety fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style redteam fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style monitor fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style prompt_eng fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style integrator fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style guardrails fill:#8b5cf6,stroke:#7c3aed,color:#fff
 
-    style llm fill:#6b7280,stroke:#4b5563,color:#fff
-    style rag fill:#6b7280,stroke:#4b5563,color:#fff
-    style any fill:#6b7280,stroke:#4b5563,color:#fff
+    style eval_runner fill:#f59e0b,stroke:#d97706,color:#fff
+    style red_team fill:#f59e0b,stroke:#d97706,color:#fff
+    style benchmark fill:#f59e0b,stroke:#d97706,color:#fff
 
-    style report fill:#22c55e,stroke:#16a34a,color:#fff
+    style agent fill:#6b7280,stroke:#4b5563,color:#fff
+    style eval_report fill:#22c55e,stroke:#16a34a,color:#fff
+    style safety_score fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
 ```bash
