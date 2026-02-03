@@ -28,6 +28,10 @@ pub fn parse_metadata(pairs: &[String]) -> Result<HashMap<String, String>> {
 #[command(name = "dna")]
 #[command(about = "Truth artifact management CLI with vector search", long_about = None)]
 pub struct Cli {
+    /// Enable verbose output (debug logs)
+    #[arg(short, long, global = true)]
+    pub verbose: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }

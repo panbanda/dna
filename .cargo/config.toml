@@ -1,10 +1,7 @@
-# Cargo configuration for DNA CLI tests
-
-[target.'cfg(all())']
-rustflags = ["-C", "instrument-coverage"]
+# Cargo configuration for DNA CLI
 
 [build]
-# Use all available CPU cores for building tests
+# Use all available CPU cores for building
 jobs = 4
 
 [test]
