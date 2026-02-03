@@ -104,13 +104,19 @@ impl LanceDatabase {
             .downcast_ref::<FixedSizeListArray>()
             .context("Failed to cast embedding column")?;
         let embedding_models = batch.column(7).as_string::<i32>();
+        let contexts = batch.column(8).as_string::<i32>();
+        let context_embeddings = batch
+            .column(9)
+            .as_any()
+            .downcast_ref::<FixedSizeListArray>()
+            .context("Failed to cast context_embedding column")?;
         let created_ats = batch
-            .column(8)
+            .column(10)
             .as_any()
             .downcast_ref::<TimestampMillisecondArray>()
             .context("Failed to cast created_at column")?;
         let updated_ats = batch
-            .column(9)
+            .column(11)
             .as_any()
             .downcast_ref::<TimestampMillisecondArray>()
             .context("Failed to cast updated_at column")?;
@@ -138,6 +144,28 @@ impl LanceDatabase {
                 .collect();
 
             let embedding_model = embedding_models.value(i).to_string();
+
+            let context = if contexts.is_null(i) {
+                None
+            } else {
+                Some(contexts.value(i).to_string())
+            };
+
+            let context_embedding = if context_embeddings.is_null(i) {
+                None
+            } else {
+                let context_emb_list = context_embeddings.value(i);
+                let context_emb_array = context_emb_list
+                    .as_any()
+                    .downcast_ref::<Float32Array>()
+                    .context("Failed to cast context_embedding values")?;
+                Some(
+                    (0..context_emb_array.len())
+                        .map(|j| context_emb_array.value(j))
+                        .collect(),
+                )
+            };
+
             let created_at = Utc.timestamp_millis_opt(created_ats.value(i)).unwrap();
             let updated_at = Utc.timestamp_millis_opt(updated_ats.value(i)).unwrap();
 
@@ -150,6 +178,8 @@ impl LanceDatabase {
                 metadata,
                 embedding: Some(embedding),
                 embedding_model,
+                context,
+                context_embedding,
                 created_at,
                 updated_at,
             });

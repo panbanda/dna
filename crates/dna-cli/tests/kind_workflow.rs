@@ -123,7 +123,6 @@ fn test_kind_add_custom() {
             "kind",
             "add",
             "deployment",
-            "--description",
             "Deployment configuration and constraints",
         ])
         .assert()
@@ -145,7 +144,7 @@ fn test_kind_add_slugifies_name() {
     ctx.cmd().args(["init"]).assert().success();
 
     ctx.cmd()
-        .args(["kind", "add", "My Custom Kind"])
+        .args(["kind", "add", "My Custom Kind", "Custom kind for testing"])
         .assert()
         .success()
         .stdout(predicate::str::contains("Added kind: my-custom-kind"));
@@ -163,7 +162,7 @@ fn test_kind_add_duplicate_reports_exists() {
     ctx.cmd().args(["init", "--intent-flow"]).assert().success();
 
     ctx.cmd()
-        .args(["kind", "add", "evaluation"])
+        .args(["kind", "add", "evaluation", "Test evaluation kind"])
         .assert()
         .success()
         .stdout(predicate::str::contains("already exists"));
@@ -275,7 +274,7 @@ fn test_add_artifact_with_custom_kind() {
     let ctx = TestContext::new();
     ctx.cmd().args(["init"]).assert().success();
     ctx.cmd()
-        .args(["kind", "add", "deployment"])
+        .args(["kind", "add", "deployment", "Deployment artifacts"])
         .assert()
         .success();
 
@@ -354,13 +353,7 @@ fn test_full_intent_flow_workflow() {
 
     // Step 4: Add custom kind
     ctx.cmd()
-        .args([
-            "kind",
-            "add",
-            "deployment",
-            "--description",
-            "Deployment rules",
-        ])
+        .args(["kind", "add", "deployment", "Deployment rules"])
         .assert()
         .success();
 
@@ -387,16 +380,15 @@ fn test_kind_without_init_fails() {
 }
 
 #[test]
-fn test_kind_add_default_description() {
+fn test_kind_add_requires_description() {
     let ctx = TestContext::new();
     ctx.cmd().args(["init"]).assert().success();
 
-    // Add without description
+    // Add without description should fail
     ctx.cmd()
         .args(["kind", "add", "testing"])
         .assert()
-        .success()
-        .stdout(predicate::str::contains("testing artifacts"));
+        .failure();
 }
 
 // -- MCP tool naming convention tests --
@@ -406,7 +398,12 @@ fn test_kind_show_displays_correct_mcp_tool_names() {
     let ctx = TestContext::new();
     ctx.cmd().args(["init"]).assert().success();
     ctx.cmd()
-        .args(["kind", "add", "my-custom-kind"])
+        .args([
+            "kind",
+            "add",
+            "my-custom-kind",
+            "Custom kind for MCP testing",
+        ])
         .assert()
         .success();
 
@@ -418,4 +415,59 @@ fn test_kind_show_displays_correct_mcp_tool_names() {
         .stdout(predicate::str::contains("dna_my_custom_kind_search"))
         .stdout(predicate::str::contains("dna_my_custom_kind_add"))
         .stdout(predicate::str::contains("dna_my_custom_kind_list"));
+}
+
+// -- Context flag tests --
+
+#[test]
+fn test_add_artifact_with_context() {
+    let ctx = TestContext::new();
+    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+
+    // Add artifact with context
+    ctx.cmd()
+        .args([
+            "add",
+            "intent",
+            "User login flow",
+            "--context",
+            "Part of the authentication system. Related to GDPR compliance.",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Added artifact"));
+
+    // Verify the artifact was created (we can't easily verify the context embedding
+    // without searching, but we can verify the command succeeded)
+}
+
+#[test]
+fn test_update_artifact_context() {
+    let ctx = TestContext::new();
+    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+
+    // Add artifact
+    let output = ctx
+        .cmd()
+        .args(["add", "intent", "Test content"])
+        .assert()
+        .success()
+        .get_output()
+        .stdout
+        .clone();
+
+    // Extract the ID from the output (it's in "Added artifact: <id>" line)
+    let output_str = String::from_utf8_lossy(&output);
+    let id = output_str
+        .lines()
+        .find(|l| l.starts_with("Added artifact:"))
+        .and_then(|l| l.split(": ").nth(1))
+        .unwrap()
+        .trim();
+
+    // Update with context
+    ctx.cmd()
+        .args(["update", id, "--context", "Now part of auth system"])
+        .assert()
+        .success();
 }

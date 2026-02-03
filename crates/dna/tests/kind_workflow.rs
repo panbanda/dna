@@ -83,6 +83,7 @@ async fn kind_service_scopes_by_kind() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -93,6 +94,7 @@ async fn kind_service_scopes_by_kind() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -103,6 +105,7 @@ async fn kind_service_scopes_by_kind() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -127,6 +130,7 @@ async fn kind_service_search_scoped() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -137,6 +141,7 @@ async fn kind_service_search_scoped() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -168,6 +173,7 @@ async fn full_intent_flow_workflow() {
             ContentFormat::Markdown,
             Some("user-auth".into()),
             HashMap::from([("domain".into(), "auth".into())]),
+            None,
         )
         .await
         .unwrap();
@@ -179,6 +185,7 @@ async fn full_intent_flow_workflow() {
             ContentFormat::Markdown,
             Some("password-hash".into()),
             HashMap::from([("domain".into(), "auth".into())]),
+            None,
         )
         .await
         .unwrap();
@@ -190,6 +197,7 @@ async fn full_intent_flow_workflow() {
             ContentFormat::Markdown,
             Some("login-eval".into()),
             HashMap::from([("domain".into(), "auth".into())]),
+            None,
         )
         .await
         .unwrap();
@@ -214,6 +222,7 @@ async fn full_intent_flow_workflow() {
             ContentFormat::Markdown,
             None,
             HashMap::new(),
+            None,
         )
         .await
         .unwrap();
@@ -241,4 +250,51 @@ fn kind_tool_names_no_hyphens() {
             assert!(tool_name.starts_with("dna_"));
         }
     }
+}
+
+#[tokio::test]
+async fn update_artifact_removes_label_with_empty_value() {
+    let db = Arc::new(TestDatabase::new());
+    let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
+    let artifact_svc = ArtifactService::new(db.clone(), embedding.clone());
+
+    // Create artifact with labels
+    let artifact = artifact_svc
+        .add(
+            "intent".into(),
+            "test content".into(),
+            ContentFormat::Markdown,
+            None,
+            HashMap::from([
+                ("env".into(), "production".into()),
+                ("team".into(), "platform".into()),
+            ]),
+            None,
+        )
+        .await
+        .unwrap();
+
+    // Update with empty value for "env" label
+    let updated = artifact_svc
+        .update(
+            &artifact.id,
+            None,
+            None,
+            None,
+            Some(HashMap::from([("env".into(), "".into())])),
+            None,
+        )
+        .await
+        .unwrap();
+
+    // Verify "env" label is removed (not set to empty string)
+    assert!(
+        !updated.metadata.contains_key("env"),
+        "Label 'env' should be removed when updated with empty value"
+    );
+    assert_eq!(
+        updated.metadata.get("team"),
+        Some(&"platform".to_string()),
+        "Other labels should remain unchanged"
+    );
 }

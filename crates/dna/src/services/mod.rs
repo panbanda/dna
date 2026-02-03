@@ -10,14 +10,17 @@ pub use kind::KindService;
 pub use search::SearchService;
 pub use types::{
     slugify_kind, validate_kind_slug, Artifact, ContentFormat, KindDefinition, KindValidationError,
-    KindsConfig, ModelConfig, ProjectConfig, SearchFilters, SearchResult, StorageConfig,
-    KIND_SLUG_MAX_LENGTH, KIND_SLUG_MIN_LENGTH, RESERVED_KIND_SLUGS,
+    KindsConfig, ModelConfig, ProjectConfig, ReindexTarget, SearchFilters, SearchResult,
+    StorageConfig, KIND_SLUG_MAX_LENGTH, KIND_SLUG_MIN_LENGTH, RESERVED_KIND_SLUGS,
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum ServiceError {
     #[error("not found: {0}")]
     NotFound(String),
+
+    #[error("validation error: {0}")]
+    Validation(String),
 
     #[error("{0}")]
     Internal(#[from] anyhow::Error),

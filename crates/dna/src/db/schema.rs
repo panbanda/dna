@@ -24,6 +24,15 @@ pub fn create_schema() -> Arc<Schema> {
             false,
         ),
         Field::new("embedding_model", DataType::Utf8, false),
+        Field::new("context", DataType::Utf8, true),
+        Field::new(
+            "context_embedding",
+            DataType::FixedSizeList(
+                Arc::new(Field::new("item", DataType::Float32, true)),
+                EMBEDDING_DIMENSION,
+            ),
+            true,
+        ),
         Field::new(
             "created_at",
             DataType::Timestamp(TimeUnit::Millisecond, None),
@@ -100,6 +109,36 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
             .collect::<Vec<_>>(),
     ));
 
+    let contexts: ArrayRef = Arc::new(StringArray::from(
+        artifacts
+            .iter()
+            .map(|a| a.context.as_deref())
+            .collect::<Vec<_>>(),
+    ));
+
+    // Build FixedSizeList for context embeddings (nullable)
+    let context_embeddings_values: Vec<f32> = artifacts
+        .iter()
+        .flat_map(|a| a.context_embedding.as_deref().unwrap_or(&[0.0; 384]))
+        .copied()
+        .collect();
+    let context_values = Float32Array::from(context_embeddings_values);
+    let context_field = Arc::new(Field::new("item", DataType::Float32, true));
+    // Create null bitmap: true if context_embedding is Some
+    let context_nulls: Vec<bool> = artifacts
+        .iter()
+        .map(|a| a.context_embedding.is_some())
+        .collect();
+    let context_embeddings_array: ArrayRef = Arc::new(
+        FixedSizeListArray::try_new(
+            context_field,
+            EMBEDDING_DIMENSION,
+            Arc::new(context_values),
+            Some(context_nulls.into()),
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to create context_embeddings array: {}", e))?,
+    );
+
     let created_ats: ArrayRef = Arc::new(TimestampMillisecondArray::from(
         artifacts
             .iter()
@@ -125,6 +164,8 @@ pub fn artifacts_to_batch(artifacts: &[crate::services::Artifact]) -> anyhow::Re
             metadata,
             embeddings_array,
             embedding_models,
+            contexts,
+            context_embeddings_array,
             created_ats,
             updated_ats,
         ],
@@ -151,6 +192,8 @@ mod tests {
         assert!(field_names.contains(&"metadata"));
         assert!(field_names.contains(&"embedding"));
         assert!(field_names.contains(&"embedding_model"));
+        assert!(field_names.contains(&"context"));
+        assert!(field_names.contains(&"context_embedding"));
         assert!(field_names.contains(&"created_at"));
         assert!(field_names.contains(&"updated_at"));
     }
@@ -158,7 +201,7 @@ mod tests {
     #[test]
     fn schema_field_count() {
         let schema = create_schema();
-        assert_eq!(schema.fields().len(), 10);
+        assert_eq!(schema.fields().len(), 12);
     }
 
     #[test]
@@ -200,7 +243,7 @@ mod tests {
 
         let batch = artifacts_to_batch(&[artifact]).unwrap();
         assert_eq!(batch.num_rows(), 1);
-        assert_eq!(batch.num_columns(), 10);
+        assert_eq!(batch.num_columns(), 12);
     }
 
     #[test]

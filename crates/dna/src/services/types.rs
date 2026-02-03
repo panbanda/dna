@@ -174,6 +174,12 @@ pub struct Artifact {
     #[serde(skip)]
     pub embedding: Option<Vec<f32>>,
     pub embedding_model: String,
+    /// Additional context for improved semantic retrieval
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub context: Option<String>,
+    /// Embedding of the context (same dimensions as content embedding)
+    #[serde(skip)]
+    pub context_embedding: Option<Vec<f32>>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -207,6 +213,8 @@ impl Artifact {
             metadata,
             embedding: None,
             embedding_model,
+            context: None,
+            context_embedding: None,
             created_at: now,
             updated_at: now,
         }
@@ -224,6 +232,57 @@ impl Artifact {
     }
 }
 
+/// Information about an embedding model's capabilities
+#[derive(Debug, Clone)]
+pub struct ModelInfo {
+    pub max_tokens: usize,
+    pub dimensions: usize,
+}
+
+/// Estimate token count from text (conservative estimate).
+///
+/// Uses a rough heuristic of ~0.75 words per token for English text.
+/// This is conservative to avoid exceeding model limits.
+pub fn estimate_tokens(text: &str) -> usize {
+    let words = text.split_whitespace().count();
+    (words as f64 / 0.75).ceil() as usize
+}
+
+/// Get model info from registry, with fallback for unknown models
+pub fn get_model_info(model: &str) -> ModelInfo {
+    match model {
+        "BAAI/bge-small-en-v1.5" => ModelInfo {
+            max_tokens: 512,
+            dimensions: 384,
+        },
+        "BAAI/bge-base-en-v1.5" => ModelInfo {
+            max_tokens: 512,
+            dimensions: 768,
+        },
+        "text-embedding-3-small" => ModelInfo {
+            max_tokens: 8191,
+            dimensions: 1536,
+        },
+        "text-embedding-3-large" => ModelInfo {
+            max_tokens: 8191,
+            dimensions: 3072,
+        },
+        "nomic-embed-text" => ModelInfo {
+            max_tokens: 8192,
+            dimensions: 768,
+        },
+        "voyage-3" => ModelInfo {
+            max_tokens: 32000,
+            dimensions: 1024,
+        },
+        // Conservative default for unknown models
+        _ => ModelInfo {
+            max_tokens: 512,
+            dimensions: 384,
+        },
+    }
+}
+
 /// Search filters
 #[derive(Debug, Clone, Default)]
 pub struct SearchFilters {
@@ -232,6 +291,17 @@ pub struct SearchFilters {
     pub after: Option<DateTime<Utc>>,
     pub before: Option<DateTime<Utc>>,
     pub limit: Option<usize>,
+}
+
+/// Specifies which embeddings to regenerate during reindexing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReindexTarget {
+    /// Regenerate content embeddings only.
+    Content,
+    /// Regenerate context embeddings only.
+    Context,
+    /// Regenerate both content and context embeddings.
+    Both,
 }
 
 /// Search result with similarity score
@@ -793,6 +863,100 @@ mod tests {
             }
             .to_string()
             .contains("reserved"));
+        }
+    }
+
+    mod model_registry {
+        use super::*;
+
+        #[test]
+        fn returns_known_limits_for_bge_small() {
+            let info = get_model_info("BAAI/bge-small-en-v1.5");
+            assert_eq!(info.max_tokens, 512);
+            assert_eq!(info.dimensions, 384);
+        }
+
+        #[test]
+        fn returns_known_limits_for_bge_base() {
+            let info = get_model_info("BAAI/bge-base-en-v1.5");
+            assert_eq!(info.max_tokens, 512);
+            assert_eq!(info.dimensions, 768);
+        }
+
+        #[test]
+        fn returns_known_limits_for_openai_small() {
+            let info = get_model_info("text-embedding-3-small");
+            assert_eq!(info.max_tokens, 8191);
+            assert_eq!(info.dimensions, 1536);
+        }
+
+        #[test]
+        fn returns_known_limits_for_openai_large() {
+            let info = get_model_info("text-embedding-3-large");
+            assert_eq!(info.max_tokens, 8191);
+            assert_eq!(info.dimensions, 3072);
+        }
+
+        #[test]
+        fn returns_known_limits_for_nomic() {
+            let info = get_model_info("nomic-embed-text");
+            assert_eq!(info.max_tokens, 8192);
+            assert_eq!(info.dimensions, 768);
+        }
+
+        #[test]
+        fn returns_known_limits_for_voyage() {
+            let info = get_model_info("voyage-3");
+            assert_eq!(info.max_tokens, 32000);
+            assert_eq!(info.dimensions, 1024);
+        }
+
+        #[test]
+        fn unknown_model_gets_conservative_default() {
+            let info = get_model_info("unknown-model-xyz");
+            assert_eq!(
+                info.max_tokens, 512,
+                "Unknown models should default to 512 tokens"
+            );
+            assert_eq!(
+                info.dimensions, 384,
+                "Unknown models should default to 384 dimensions"
+            );
+        }
+    }
+
+    mod token_estimation {
+        use super::*;
+
+        #[test]
+        fn empty_text_returns_zero() {
+            assert_eq!(estimate_tokens(""), 0);
+        }
+
+        #[test]
+        fn single_word_returns_at_least_one() {
+            let tokens = estimate_tokens("hello");
+            assert!(tokens >= 1, "Single word should estimate at least 1 token");
+        }
+
+        #[test]
+        fn word_count_correlates_with_tokens() {
+            let short = estimate_tokens("one two three");
+            let long = estimate_tokens("one two three four five six seven eight nine ten");
+            assert!(long > short, "More words should estimate more tokens");
+        }
+
+        #[test]
+        fn estimates_conservatively() {
+            // ~0.75 words per token means 100 words should be ~133 tokens
+            let text = "word ".repeat(100);
+            let tokens = estimate_tokens(&text);
+            // Should be at least 100 tokens (conservative)
+            assert!(
+                tokens >= 100,
+                "100 words should estimate at least 100 tokens, got {}",
+                tokens
+            );
         }
     }
 }

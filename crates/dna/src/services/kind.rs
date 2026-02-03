@@ -39,6 +39,7 @@ impl KindService {
         format: ContentFormat,
         name: Option<String>,
         metadata: HashMap<String, String>,
+        context: Option<String>,
     ) -> Result<Artifact> {
         let mut artifact = Artifact::new(
             self.kind_slug.clone(),
@@ -49,12 +50,24 @@ impl KindService {
             self.embedding.model_id().to_string(),
         );
 
+        // Generate content embedding
         let embedding = self
             .embedding
             .embed(&content)
             .await
             .context("Failed to generate embedding")?;
         artifact.embedding = Some(embedding);
+
+        // Set context and generate context embedding if provided
+        artifact.context = context.clone();
+        if let Some(ctx) = &context {
+            let context_embedding = self
+                .embedding
+                .embed(ctx)
+                .await
+                .context("Failed to generate context embedding")?;
+            artifact.context_embedding = Some(context_embedding);
+        }
 
         self.db
             .insert(&artifact)
@@ -115,6 +128,7 @@ mod tests {
                 ContentFormat::Markdown,
                 None,
                 HashMap::new(),
+                None,
             )
             .await
             .unwrap();

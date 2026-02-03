@@ -146,7 +146,7 @@ async fn create_artifact(
 
     match state
         .artifact_service
-        .add(body.kind, body.content, format, body.name, metadata)
+        .add(body.kind, body.content, format, body.name, metadata, None)
         .await
     {
         Ok(artifact) => (axum::http::StatusCode::CREATED, Json(artifact)).into_response(),
@@ -184,7 +184,7 @@ async fn update_artifact(
 ) -> axum::response::Response {
     match state
         .artifact_service
-        .update(&id, body.content, body.name, body.kind, body.metadata)
+        .update(&id, body.content, body.name, body.kind, body.metadata, None)
         .await
     {
         Ok(artifact) => Json(artifact).into_response(),
@@ -299,7 +299,7 @@ async fn kind_create_artifact(
 
     match state
         .artifact_service
-        .add(kind, body.content, format, body.name, metadata)
+        .add(kind, body.content, format, body.name, metadata, None)
         .await
     {
         Ok(artifact) => (axum::http::StatusCode::CREATED, Json(artifact)).into_response(),
