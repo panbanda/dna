@@ -1,7 +1,7 @@
 use super::parse_metadata;
 use anyhow::Result;
 use chrono::{NaiveDate, TimeZone, Utc};
-use clap::Args;
+use clap::{ArgGroup, Args};
 use dna::services::{ArtifactService, ConfigService, ReindexTarget, SearchFilters, SearchService};
 use std::path::PathBuf;
 
@@ -102,6 +102,7 @@ pub struct ChangesArgs {
 /// dna reindex --all --force
 /// ```
 #[derive(Args)]
+#[command(group = ArgGroup::new("target").required(true).args(&["all", "content", "context", "id"]))]
 pub struct ReindexArgs {
     /// Reindex all embeddings (content + context).
     /// Use this for a full rebuild after model changes or database corruption.
@@ -296,30 +297,6 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 }
 
 pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
-    // Show help if no action flags are provided
-    if !args.all && !args.content && !args.context && args.id.is_none() {
-        println!("Reindex embeddings for artifacts in the database.");
-        println!();
-        println!("USAGE:");
-        println!("  dna reindex [OPTIONS]");
-        println!();
-        println!("WHAT TO REINDEX:");
-        println!("  --all        Reindex all embeddings (content + context)");
-        println!("  --content    Reindex content embeddings only");
-        println!("  --context    Reindex context embeddings only");
-        println!("  --id <ID>    Reindex specific artifact");
-        println!();
-        println!("FILTERS:");
-        println!("  --kind <KIND>        Only artifacts of this kind");
-        println!("  --label <KEY=VALUE>  Only artifacts with this label");
-        println!("  --since <DATE>       Only artifacts modified after date (YYYY-MM-DD)");
-        println!();
-        println!("OPTIONS:");
-        println!("  --dry-run    Show what would be reindexed");
-        println!("  --force      Reindex even if model unchanged");
-        return Ok(());
-    }
-
     let project_root = PathBuf::from(".");
     let config_service = ConfigService::new(&project_root);
 

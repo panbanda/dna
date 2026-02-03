@@ -1,6 +1,6 @@
 use super::types::{
     estimate_tokens, get_model_info, slugify_kind, Artifact, ContentFormat, ReindexTarget,
-    SearchFilters,
+    SearchFilters, SearchResult,
 };
 use super::ServiceError;
 use crate::db::Database;
