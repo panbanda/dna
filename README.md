@@ -62,28 +62,46 @@ Truth artifacts that constrain implementations across any language or framework:
 
 ```mermaid
 flowchart TB
-    subgraph truth["Truth Layer"]
-        intent["Intent<br/><i>what the system must do</i>"]
-        contract["Contract<br/><i>API guarantees</i>"]
-        algorithm["Algorithm<br/><i>computational rules</i>"]
-        evaluation["Evaluation<br/><i>acceptance criteria</i>"]
-        constraint["Constraint<br/><i>boundaries & limits</i>"]
-        pace["Pace<br/><i>change velocity</i>"]
-        monitor["Monitor<br/><i>observability rules</i>"]
-        glossary["Glossary<br/><i>domain terms</i>"]
-        integration["Integration<br/><i>external systems</i>"]
-        reporting["Reporting<br/><i>data outputs</i>"]
-        compliance["Compliance<br/><i>regulatory rules</i>"]
+    subgraph discovery["Discovery Agents"]
+        architect["Architect Agent<br/><i>discovers intent</i>"]
+        analyst["Analyst Agent<br/><i>extracts contracts</i>"]
+        auditor["Compliance Agent<br/><i>updates regulations</i>"]
     end
 
-    truth -->|constrains| impl1["Go App"]
-    truth -->|constrains| impl2["Python App"]
-    truth -->|constrains| impl3["...any language"]
+    subgraph truth["Truth Layer"]
+        intent["Intent"]
+        contract["Contract"]
+        algorithm["Algorithm"]
+        evaluation["Evaluation"]
+        constraint["Constraint"]
+        pace["Pace"]
+        monitor["Monitor"]
+        glossary["Glossary"]
+        integration["Integration"]
+        reporting["Reporting"]
+        compliance["Compliance"]
+    end
 
+    subgraph coding["Coding Agents"]
+        coder["Coder Agent<br/><i>implements features</i>"]
+        tester["Test Agent<br/><i>validates evals</i>"]
+        reviewer["Review Agent<br/><i>checks constraints</i>"]
+    end
+
+    subgraph impl["Implementations"]
+        impl1["Go App"]
+        impl2["Python App"]
+        impl3["...any language"]
+    end
+
+    discovery -->|"updates"| truth
+    truth -->|"constrains"| coding
+    coding -->|"produces"| impl
+
+    style discovery fill:#d1fae5,stroke:#059669
     style truth fill:#fef3c7,stroke:#d97706
-    style impl1 fill:#fef3c7,stroke:#d97706
-    style impl2 fill:#fef3c7,stroke:#d97706
-    style impl3 fill:#fef3c7,stroke:#d97706
+    style coding fill:#ede9fe,stroke:#7c3aed
+    style impl fill:#f3f4f6,stroke:#6b7280
 ```
 
 ### AI Safety Template
@@ -92,22 +110,40 @@ Truth artifacts for AI/LLM system safety and governance:
 
 ```mermaid
 flowchart TB
-    subgraph truth["Truth Layer"]
-        behavior["Behavior<br/><i>expected AI actions</i>"]
-        boundary["Boundary<br/><i>operational limits</i>"]
-        threat["Threat<br/><i>risk vectors</i>"]
-        eval["Eval<br/><i>safety tests</i>"]
-        governance["Governance<br/><i>oversight rules</i>"]
+    subgraph discovery["Governance Agents"]
+        threat_hunter["Threat Hunter<br/><i>discovers risks</i>"]
+        policy["Policy Agent<br/><i>updates boundaries</i>"]
+        eval_agent["Eval Agent<br/><i>defines safety tests</i>"]
     end
 
-    truth -->|constrains| impl1["LLM Agent"]
-    truth -->|constrains| impl2["RAG Pipeline"]
-    truth -->|constrains| impl3["...any AI system"]
+    subgraph truth["Truth Layer"]
+        behavior["Behavior"]
+        boundary["Boundary"]
+        threat["Threat"]
+        eval["Eval"]
+        governance["Governance"]
+    end
 
+    subgraph coding["Implementation Agents"]
+        safety_coder["Safety Coder<br/><i>implements guards</i>"]
+        red_team["Red Team Agent<br/><i>validates threats</i>"]
+        monitor_agent["Monitor Agent<br/><i>enforces boundaries</i>"]
+    end
+
+    subgraph impl["AI Systems"]
+        impl1["LLM Agent"]
+        impl2["RAG Pipeline"]
+        impl3["...any AI system"]
+    end
+
+    discovery -->|"updates"| truth
+    truth -->|"constrains"| coding
+    coding -->|"produces"| impl
+
+    style discovery fill:#fce7f3,stroke:#db2777
     style truth fill:#dbeafe,stroke:#2563eb
-    style impl1 fill:#dbeafe,stroke:#2563eb
-    style impl2 fill:#dbeafe,stroke:#2563eb
-    style impl3 fill:#dbeafe,stroke:#2563eb
+    style coding fill:#ede9fe,stroke:#7c3aed
+    style impl fill:#f3f4f6,stroke:#6b7280
 ```
 
 ```bash
