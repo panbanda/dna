@@ -134,14 +134,14 @@ flowchart LR
     subgraph discovery["Governance Agents"]
         hunter["Threat Hunter"]
         policy["Policy"]
-        eval_agent["Eval"]
+        benchmarker["Benchmarker"]
     end
 
     subgraph dna["DNA Layer"]
         behavior(["behavior"])
         boundary(["boundary"])
         threat(["threat"])
-        eval(["eval"])
+        evaluation(["eval"])
         governance(["governance"])
     end
 
@@ -157,30 +157,28 @@ flowchart LR
         any(["any..."])
     end
 
-    hunter -.->|discovers| threat
-    policy -.->|defines| boundary
-    policy -.->|defines| governance
-    eval_agent -.->|creates| eval
+    subgraph increments["Increments"]
+        report(["Safety Report"])
+    end
 
-    behavior -->|shapes| safety
-    boundary -->|limits| safety
-    boundary -->|limits| monitor
-    threat -->|targets| redteam
-    eval -->|validates| redteam
-    governance -->|enforces| monitor
+    discovery -.->|updates| dna
 
-    safety ==>|produces| llm
-    safety ==>|produces| rag
-    safety ==>|produces| any
+    dna -->|context / mcp| safety
+    dna -->|context / mcp| redteam
+    dna -->|context / mcp| monitor
+
+    safety ==>|produces| impl
+    redteam ==>|validates| report
+    monitor ==>|enforces| report
 
     style hunter fill:#db2777,stroke:#be185d,color:#fff
     style policy fill:#db2777,stroke:#be185d,color:#fff
-    style eval_agent fill:#db2777,stroke:#be185d,color:#fff
+    style benchmarker fill:#db2777,stroke:#be185d,color:#fff
 
     style behavior fill:#60a5fa,stroke:#2563eb,color:#000
     style boundary fill:#f87171,stroke:#dc2626,color:#000
     style threat fill:#f87171,stroke:#dc2626,color:#000
-    style eval fill:#60a5fa,stroke:#2563eb,color:#000
+    style evaluation fill:#60a5fa,stroke:#2563eb,color:#000
     style governance fill:#a78bfa,stroke:#7c3aed,color:#000
 
     style safety fill:#8b5cf6,stroke:#7c3aed,color:#fff
@@ -190,6 +188,8 @@ flowchart LR
     style llm fill:#6b7280,stroke:#4b5563,color:#fff
     style rag fill:#6b7280,stroke:#4b5563,color:#fff
     style any fill:#6b7280,stroke:#4b5563,color:#fff
+
+    style report fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
 ```bash
