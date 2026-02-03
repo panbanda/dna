@@ -159,7 +159,7 @@ mod tests {
             let all: Vec<_> = self.artifacts.lock().unwrap().values().cloned().collect();
             Ok(all
                 .into_iter()
-                .filter(|a| filters.kind.as_ref().map_or(true, |k| &a.kind == k))
+                .filter(|a| filters.kind.as_ref().is_none_or(|k| a.kind == *k))
                 .collect())
         }
         async fn search(
@@ -170,7 +170,7 @@ mod tests {
             let all: Vec<_> = self.artifacts.lock().unwrap().values().cloned().collect();
             Ok(all
                 .into_iter()
-                .filter(|a| filters.kind.as_ref().map_or(true, |k| &a.kind == k))
+                .filter(|a| filters.kind.as_ref().is_none_or(|k| a.kind == *k))
                 .map(|a| SearchResult {
                     artifact: a,
                     score: 0.9,

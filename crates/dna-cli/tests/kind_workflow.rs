@@ -1,3 +1,5 @@
+#![allow(deprecated)] // cargo_bin is deprecated but still functional
+
 /// E2E integration tests for the kind workflow
 ///
 /// Tests the complete kind management workflow: init --intent-flow, kind add/list/show/remove,
