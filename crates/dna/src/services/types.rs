@@ -1048,4 +1048,78 @@ mod tests {
             );
         }
     }
+
+    mod templates {
+        use super::*;
+
+        #[test]
+        fn get_template_returns_intent() {
+            let template = get_template("intent");
+            assert!(template.is_some());
+            let template = template.unwrap();
+            assert_eq!(template.name, "intent");
+            assert!(!template.kinds.is_empty());
+        }
+
+        #[test]
+        fn get_template_returns_none_for_unknown() {
+            assert!(get_template("unknown").is_none());
+            assert!(get_template("").is_none());
+            assert!(get_template("Intent").is_none()); // case sensitive
+        }
+
+        #[test]
+        fn list_templates_includes_intent() {
+            let templates = list_templates();
+            assert!(templates.contains(&"intent"));
+        }
+
+        #[test]
+        fn intent_template_has_expected_kinds() {
+            let template = get_template("intent").unwrap();
+            let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
+
+            assert!(slugs.contains(&"intent"));
+            assert!(slugs.contains(&"invariant"));
+            assert!(slugs.contains(&"contract"));
+            assert!(slugs.contains(&"algorithm"));
+            assert!(slugs.contains(&"evaluation"));
+            assert!(slugs.contains(&"pace"));
+            assert!(slugs.contains(&"monitor"));
+            assert!(slugs.contains(&"glossary"));
+            assert!(slugs.contains(&"integration"));
+            assert!(slugs.contains(&"reporting"));
+            assert!(slugs.contains(&"compliance"));
+            assert_eq!(slugs.len(), 11);
+        }
+
+        #[test]
+        fn all_template_kinds_have_descriptions_with_examples() {
+            let template = get_template("intent").unwrap();
+            for kind in template.kinds {
+                assert!(
+                    !kind.description.is_empty(),
+                    "{} has empty description",
+                    kind.slug
+                );
+                assert!(
+                    kind.description.contains("Ex:") || kind.description.contains("Ex:"),
+                    "{} description should contain an example",
+                    kind.slug
+                );
+            }
+        }
+
+        #[test]
+        fn all_template_kind_slugs_are_valid() {
+            let template = get_template("intent").unwrap();
+            for kind in template.kinds {
+                assert!(
+                    validate_kind_slug(kind.slug).is_ok(),
+                    "Template kind '{}' has invalid slug",
+                    kind.slug
+                );
+            }
+        }
+    }
 }

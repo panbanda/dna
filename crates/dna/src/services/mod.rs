@@ -12,7 +12,7 @@ pub use types::{
     get_template, list_templates, slugify_kind, validate_kind_slug, Artifact, ContentFormat,
     KindDefinition, KindValidationError, KindsConfig, ModelConfig, ProjectConfig, ReindexTarget,
     SearchFilters, SearchResult, StorageConfig, Template, TemplateKind, KIND_SLUG_MAX_LENGTH,
-    KIND_SLUG_MIN_LENGTH, RESERVED_KIND_SLUGS, TEMPLATES, TEMPLATE_INTENT,
+    KIND_SLUG_MIN_LENGTH, RESERVED_KIND_SLUGS,
 };
 
 #[derive(Debug, thiserror::Error)]
