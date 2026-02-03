@@ -118,7 +118,7 @@ pub async fn execute_versions(args: VersionsArgs) -> Result<()> {
     }
 
     println!("Database versions:");
-    println!("  {:>8}  {}", "Version", "Timestamp");
+    println!("  {:>8}  Timestamp", "Version");
     for version_info in versions {
         println!(
             "  {:>8}  {}",
