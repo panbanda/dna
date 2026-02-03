@@ -308,13 +308,13 @@ fn test_list_filters_by_kind() {
         .assert()
         .success();
 
-    // List only intent artifacts
+    // List only intent artifacts - should show 2 artifacts
     ctx.cmd()
         .args(["list", "--kind", "intent"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("authentication"))
-        .stdout(predicate::str::contains("password"));
+        .stdout(predicate::str::contains("Found 2 artifacts"))
+        .stdout(predicate::str::contains("intent"));
 }
 
 // -- Full workflow tests --

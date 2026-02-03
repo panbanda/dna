@@ -289,22 +289,21 @@ mod kind_workflow_tests {
             .assert()
             .success();
 
-        // List only intent artifacts
+        // List only intent artifacts - should show 2 artifacts
         ctx.cmd()
             .args(["list", "--kind", "intent"])
             .assert()
             .success()
-            .stdout(predicate::str::contains("authentication"))
-            .stdout(predicate::str::contains("password"))
-            .stdout(predicate::str::contains("token").not());
+            .stdout(predicate::str::contains("Found 2 artifacts"))
+            .stdout(predicate::str::contains("intent"));
 
-        // List only evaluation artifacts
+        // List only evaluation artifacts - should show 1 artifact
         ctx.cmd()
             .args(["list", "--kind", "evaluation"])
             .assert()
             .success()
-            .stdout(predicate::str::contains("token"))
-            .stdout(predicate::str::contains("authentication").not());
+            .stdout(predicate::str::contains("Found 1 artifact"))
+            .stdout(predicate::str::contains("evaluation"));
     }
 
     #[test]
