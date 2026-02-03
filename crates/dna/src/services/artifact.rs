@@ -98,6 +98,14 @@ impl ArtifactService {
         self.db.get(id).await.context("Failed to get artifact")
     }
 
+    /// Get artifact by ID at a specific database version
+    pub async fn get_at_version(&self, id: &str, version: u64) -> Result<Option<Artifact>> {
+        self.db
+            .get_at_version(id, version)
+            .await
+            .context("Failed to get artifact at version")
+    }
+
     /// Update an existing artifact
     pub async fn update(
         &self,
@@ -402,6 +410,35 @@ mod tests {
             _filters: SearchFilters,
         ) -> Result<Vec<SearchResult>> {
             Ok(vec![])
+        }
+
+        async fn version(&self) -> Result<u64> {
+            Ok(1)
+        }
+
+        async fn get_at_version(&self, id: &str, _version: u64) -> Result<Option<Artifact>> {
+            self.get(id).await
+        }
+
+        async fn list_versions(
+            &self,
+            _limit: Option<usize>,
+        ) -> Result<Vec<crate::db::VersionInfo>> {
+            Ok(vec![])
+        }
+
+        async fn compact(&self) -> Result<crate::db::CompactStats> {
+            Ok(crate::db::CompactStats {
+                files_merged: 0,
+                bytes_saved: 0,
+            })
+        }
+
+        async fn cleanup_versions(&self, _keep_versions: usize) -> Result<crate::db::CleanupStats> {
+            Ok(crate::db::CleanupStats {
+                versions_removed: 0,
+                bytes_freed: 0,
+            })
         }
     }
 

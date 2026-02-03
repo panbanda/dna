@@ -152,6 +152,35 @@ mod tests {
         ) -> Result<Vec<SearchResult>> {
             Ok(self.search_results.lock().unwrap().clone())
         }
+
+        async fn version(&self) -> Result<u64> {
+            Ok(1)
+        }
+
+        async fn get_at_version(&self, id: &str, _version: u64) -> Result<Option<Artifact>> {
+            self.get(id).await
+        }
+
+        async fn list_versions(
+            &self,
+            _limit: Option<usize>,
+        ) -> Result<Vec<crate::db::VersionInfo>> {
+            Ok(vec![])
+        }
+
+        async fn compact(&self) -> Result<crate::db::CompactStats> {
+            Ok(crate::db::CompactStats {
+                files_merged: 0,
+                bytes_saved: 0,
+            })
+        }
+
+        async fn cleanup_versions(&self, _keep_versions: usize) -> Result<crate::db::CleanupStats> {
+            Ok(crate::db::CleanupStats {
+                versions_removed: 0,
+                bytes_freed: 0,
+            })
+        }
     }
 
     #[tokio::test]

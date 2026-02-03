@@ -36,6 +36,10 @@ pub struct AddArgs {
 pub struct GetArgs {
     /// Artifact ID
     pub id: String,
+
+    /// Retrieve artifact at specific database version
+    #[arg(long)]
+    pub version: Option<u64>,
 }
 
 #[derive(Args)]
@@ -113,7 +117,12 @@ pub async fn execute_add(args: AddArgs) -> Result<()> {
 pub async fn execute_get(args: GetArgs) -> Result<()> {
     let service = create_service().await?;
 
-    if let Some(artifact) = service.get(&args.id).await? {
+    let artifact = match args.version {
+        Some(version) => service.get_at_version(&args.id, version).await?,
+        None => service.get(&args.id).await?,
+    };
+
+    if let Some(artifact) = artifact {
         println!("{}", serde_json::to_string_pretty(&artifact)?);
     } else {
         println!("Artifact not found: {}", args.id);

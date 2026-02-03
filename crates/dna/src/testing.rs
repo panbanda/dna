@@ -3,10 +3,11 @@
 //! This module provides reusable test doubles for unit and integration testing.
 //! It includes mock implementations of `EmbeddingProvider` and `Database` traits.
 
-use crate::db::Database;
+use crate::db::{CleanupStats, CompactStats, Database, VersionInfo};
 use crate::embedding::EmbeddingProvider;
 use crate::services::{Artifact, SearchFilters, SearchResult};
 use anyhow::Result;
+use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -115,6 +116,40 @@ impl Database for TestDatabase {
                 score: 0.85,
             })
             .collect())
+    }
+
+    async fn version(&self) -> Result<u64> {
+        Ok(1)
+    }
+
+    async fn get_at_version(&self, id: &str, _version: u64) -> Result<Option<Artifact>> {
+        // TestDatabase doesn't support versioning, just return current state
+        self.get(id).await
+    }
+
+    async fn list_versions(&self, limit: Option<usize>) -> Result<Vec<VersionInfo>> {
+        let versions = vec![VersionInfo {
+            version: 1,
+            timestamp: Utc::now(),
+        }];
+        Ok(match limit {
+            Some(n) => versions.into_iter().take(n).collect(),
+            None => versions,
+        })
+    }
+
+    async fn compact(&self) -> Result<CompactStats> {
+        Ok(CompactStats {
+            files_merged: 0,
+            bytes_saved: 0,
+        })
+    }
+
+    async fn cleanup_versions(&self, _keep_versions: usize) -> Result<CleanupStats> {
+        Ok(CleanupStats {
+            versions_removed: 0,
+            bytes_freed: 0,
+        })
     }
 }
 
