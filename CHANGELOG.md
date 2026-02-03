@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.1](https://github.com/panbanda/dna/compare/dna-v0.3.0...dna-v0.3.1) (2026-02-03)
+
+
+### Features
+
+* rename ai-safety template to agentic ([aa8b0c6](https://github.com/panbanda/dna/commit/aa8b0c6767ac2633c652a8ccfa3d178dfafd91ea))
+
+
+### Bug Fixes
+
+* add --verbose flag and remove coverage instrumentation ([211d627](https://github.com/panbanda/dna/commit/211d627c663aaf95c4f73b641a68377f5ae3a6e9))
+* add --verbose flag and remove coverage instrumentation ([5773bdb](https://github.com/panbanda/dna/commit/5773bdbbfe458ef3408334764946c19aa8dee79d))
+* resolve mermaid rendering error in agentic template ([d7aeb15](https://github.com/panbanda/dna/commit/d7aeb15a86bc9ca51e98cb8181ca5b87d1e04d73))
+
 ## [0.3.0](https://github.com/panbanda/dna/compare/dna-v0.2.1...dna-v0.3.0) (2026-02-03)
 
 
