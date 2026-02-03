@@ -9,7 +9,7 @@
 
 ### Features
 
-* add ai-safety template and documentation ([0985ba3](https://github.com/panbanda/dna/commit/0985ba3e86b55a0b2ca23e84fbaa0c8c61d4dd9f))
+* add agentic template and documentation ([0985ba3](https://github.com/panbanda/dna/commit/0985ba3e86b55a0b2ca23e84fbaa0c8c61d4dd9f))
 * add constraint and requirement kinds to intent template ([5fcbbf9](https://github.com/panbanda/dna/commit/5fcbbf9605a2272213b6af3553cae1740619c465))
 * add versioning and prune commands for storage management ([ced2ba1](https://github.com/panbanda/dna/commit/ced2ba1ccd3c3f97d4d74b5b7e5c5d44a7fc4a4b))
 * add versioning and prune commands for storage management ([b7b4608](https://github.com/panbanda/dna/commit/b7b4608be4725b7dfb2d167cdba8ba6bd90dfb79))

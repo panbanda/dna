@@ -101,10 +101,10 @@ fn test_init_ai_safety_template() {
     let ctx = TestContext::new();
 
     ctx.cmd()
-        .args(["init", "--template", "ai-safety"])
+        .args(["init", "--template", "agentic"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Template 'ai-safety' applied"))
+        .stdout(predicate::str::contains("Template 'agentic' applied"))
         .stdout(predicate::str::contains("behavior"))
         .stdout(predicate::str::contains("boundary"))
         .stdout(predicate::str::contains("threat"))
@@ -132,7 +132,7 @@ fn test_list_templates() {
         .assert()
         .success()
         .stdout(predicate::str::contains("intent"))
-        .stdout(predicate::str::contains("ai-safety"));
+        .stdout(predicate::str::contains("agentic"));
 }
 
 // -- Kind management CLI tests --

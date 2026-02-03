@@ -315,7 +315,7 @@ async fn update_artifact_removes_label_with_empty_value() {
 fn ai_safety_template_registers_five_kinds() {
     let temp_dir = TempDir::new().unwrap();
     let svc = ConfigService::new(temp_dir.path());
-    let template = get_template("ai-safety").unwrap();
+    let template = get_template("agentic").unwrap();
 
     let config = svc.init_from_template(template).unwrap();
 
