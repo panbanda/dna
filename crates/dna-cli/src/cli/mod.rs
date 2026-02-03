@@ -1,6 +1,7 @@
 mod artifact;
 mod config;
 mod init;
+mod kind;
 mod mcp;
 mod render;
 mod search;
@@ -67,6 +68,9 @@ pub enum Commands {
 
     /// Start MCP server
     Mcp(mcp::McpArgs),
+
+    /// Manage artifact kinds
+    Kind(kind::KindArgs),
 }
 
 /// Execute the CLI command
@@ -84,5 +88,6 @@ pub async fn execute(cli: Cli) -> Result<()> {
         Commands::Reindex(args) => search::execute_reindex(args).await,
         Commands::Config(args) => config::execute(args).await,
         Commands::Mcp(args) => mcp::execute(args).await,
+        Commands::Kind(args) => kind::execute(args).await,
     }
 }

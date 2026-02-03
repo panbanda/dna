@@ -104,6 +104,70 @@ impl ConfigService {
         Ok(uri)
     }
 
+    /// Initialize with the intent-flow artifact kinds from the intent-starter pattern
+    pub fn init_intent_flow(&self) -> Result<ProjectConfig> {
+        let mut config = if self.exists() {
+            self.load()?
+        } else {
+            ProjectConfig::default()
+        };
+
+        let intent_kinds = [
+            (
+                "intent",
+                "Core purpose statements expressing why features exist",
+            ),
+            (
+                "invariant",
+                "Non-negotiable properties that must always hold true",
+            ),
+            (
+                "contract",
+                "Guaranteed observable behavior and API specifications",
+            ),
+            (
+                "algorithm",
+                "How critical operations work for security and performance",
+            ),
+            (
+                "evaluation",
+                "Success criteria, thresholds, and verification mechanisms",
+            ),
+            ("pace", "Velocity constraints and change governance rules"),
+            (
+                "monitor",
+                "Required observability and monitoring guarantees",
+            ),
+        ];
+
+        for (slug, description) in intent_kinds {
+            config.kinds.add(slug.to_string(), description.to_string());
+        }
+
+        self.save(&config)?;
+        Ok(config)
+    }
+
+    /// Add a kind to the config
+    pub fn add_kind(&self, slug: &str, description: &str) -> Result<bool> {
+        let mut config = self.load()?;
+        let added = config.kinds.add(slug.to_string(), description.to_string());
+        if added {
+            self.save(&config)?;
+        }
+        Ok(added)
+    }
+
+    /// Remove a kind from the config
+    pub fn remove_kind(&self, slug: &str) -> Result<bool> {
+        let mut config = self.load()?;
+        let removed = config.kinds.remove(slug);
+        if removed {
+            self.save(&config)?;
+        }
+        Ok(removed)
+    }
+
     /// Check if configuration exists
     pub fn exists(&self) -> bool {
         self.config_path.exists()

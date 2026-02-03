@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Args;
-use dna::mcp::DnaToolHandler;
+use dna::mcp::{DnaToolHandler, RegisteredKind};
 use dna::services::ConfigService;
 use rmcp::ServiceExt;
 use std::path::PathBuf;
@@ -47,8 +47,19 @@ pub async fn execute(args: McpArgs) -> Result<()> {
     // Log to stderr for stdio servers
     eprintln!("Starting DNA MCP server...");
 
+    // Build registered kinds from config
+    let kinds: Vec<RegisteredKind> = config
+        .kinds
+        .definitions
+        .iter()
+        .map(|d| RegisteredKind {
+            slug: d.slug.clone(),
+            description: d.description.clone(),
+        })
+        .collect();
+
     // Create handler and start server with stdio transport
-    let handler = DnaToolHandler::new(db, embedding, include_tools, exclude_tools);
+    let handler = DnaToolHandler::with_kinds(db, embedding, include_tools, exclude_tools, kinds);
     let service = handler.serve(rmcp::transport::io::stdio()).await?;
     service.waiting().await?;
 

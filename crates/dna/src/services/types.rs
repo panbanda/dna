@@ -157,12 +157,61 @@ pub struct StorageConfig {
     pub uri: Option<String>,
 }
 
+/// Definition of a registered artifact kind
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct KindDefinition {
+    pub slug: String,
+    pub description: String,
+}
+
+/// Configuration for registered artifact kinds
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct KindsConfig {
+    #[serde(default)]
+    pub definitions: Vec<KindDefinition>,
+}
+
+impl KindsConfig {
+    /// Check if a kind is registered
+    pub fn has(&self, slug: &str) -> bool {
+        self.definitions.iter().any(|d| d.slug == slug)
+    }
+
+    /// Add a kind definition, returning false if already exists
+    pub fn add(&mut self, slug: String, description: String) -> bool {
+        if self.has(&slug) {
+            return false;
+        }
+        self.definitions.push(KindDefinition { slug, description });
+        true
+    }
+
+    /// Remove a kind definition, returning true if it existed
+    pub fn remove(&mut self, slug: &str) -> bool {
+        let len = self.definitions.len();
+        self.definitions.retain(|d| d.slug != slug);
+        self.definitions.len() < len
+    }
+
+    /// Get a kind definition by slug
+    pub fn get(&self, slug: &str) -> Option<&KindDefinition> {
+        self.definitions.iter().find(|d| d.slug == slug)
+    }
+
+    /// List all registered kind slugs
+    pub fn slugs(&self) -> Vec<&str> {
+        self.definitions.iter().map(|d| d.slug.as_str()).collect()
+    }
+}
+
 /// Project configuration
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct ProjectConfig {
     pub model: ModelConfig,
     #[serde(default)]
     pub storage: StorageConfig,
+    #[serde(default)]
+    pub kinds: KindsConfig,
 }
 
 #[cfg(test)]

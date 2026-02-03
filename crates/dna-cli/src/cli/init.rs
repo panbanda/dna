@@ -9,6 +9,10 @@ pub struct InitArgs {
     #[arg(long)]
     model: Option<String>,
 
+    /// Initialize with intent-flow artifact kinds (intent, invariant, contract, algorithm, evaluation, pace, monitor)
+    #[arg(long)]
+    intent_flow: bool,
+
     /// Project root directory
     #[arg(default_value = ".")]
     path: PathBuf,
@@ -38,6 +42,18 @@ pub async fn execute(args: InitArgs) -> Result<()> {
         config
     } else {
         config_service.init()?
+    };
+
+    // Apply intent-flow kinds if requested
+    let config = if args.intent_flow {
+        let updated = config_service.init_intent_flow()?;
+        println!("  Intent-flow kinds registered:");
+        for kind in &updated.kinds.definitions {
+            println!("    {} - {}", kind.slug, kind.description);
+        }
+        updated
+    } else {
+        config
     };
 
     // Initialize database

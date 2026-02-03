@@ -73,3 +73,5 @@ tokio-test = { workspace = true }
 mockall = { workspace = true }
 assert_fs = { workspace = true }
 predicates = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }

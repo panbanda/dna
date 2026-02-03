@@ -3,8 +3,9 @@ use dna::db::lance::LanceDatabase;
 use dna::db::Database;
 use dna::embedding;
 use dna::embedding::EmbeddingProvider;
+use dna::mcp::RegisteredKind;
 use dna::services::{ArtifactService, ProjectConfig, SearchService};
-use figment::providers::{Env, Serialized};
+use figment::providers::{Env, Format, Serialized, Toml};
 use figment::Figment;
 use std::sync::Arc;
 
@@ -14,14 +15,20 @@ pub struct AppState {
     pub embedding: Arc<dyn EmbeddingProvider>,
     pub artifact_service: Arc<ArtifactService>,
     pub search_service: Arc<SearchService>,
+    pub registered_kinds: Vec<RegisteredKind>,
 }
 
 impl AppState {
     pub async fn from_env() -> Result<Self> {
-        let config: ProjectConfig = Figment::new()
-            .merge(Serialized::defaults(ProjectConfig::default()))
-            .merge(Env::prefixed("DNA_").split("__"))
-            .extract()?;
+        let mut figment = Figment::new().merge(Serialized::defaults(ProjectConfig::default()));
+
+        // Try loading .dna/config.toml if it exists
+        let config_path = std::path::Path::new(".dna/config.toml");
+        if config_path.exists() {
+            figment = figment.merge(Toml::file(config_path));
+        }
+
+        let config: ProjectConfig = figment.merge(Env::prefixed("DNA_").split("__")).extract()?;
 
         let storage_uri = config
             .storage
@@ -38,11 +45,22 @@ impl AppState {
         let artifact_service = Arc::new(ArtifactService::new(db.clone(), embedding.clone()));
         let search_service = Arc::new(SearchService::new(db.clone(), embedding.clone()));
 
+        let registered_kinds: Vec<RegisteredKind> = config
+            .kinds
+            .definitions
+            .iter()
+            .map(|d| RegisteredKind {
+                slug: d.slug.clone(),
+                description: d.description.clone(),
+            })
+            .collect();
+
         Ok(Self {
             db,
             embedding,
             artifact_service,
             search_service,
+            registered_kinds,
         })
     }
 }
