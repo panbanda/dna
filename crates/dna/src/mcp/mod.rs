@@ -1,3 +1,3 @@
 pub mod handler;
 
-pub use handler::DnaToolHandler;
+pub use handler::{DnaToolHandler, RegisteredKind};

@@ -40,3 +40,10 @@ tracing-subscriber = { workspace = true }
 
 # MCP
 rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk", rev = "8d09f88", features = ["server", "macros", "transport-io"] }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+assert_cmd = "2.0"
+predicates = { workspace = true }
+regex = "1.10"
+serial_test = "3.0"

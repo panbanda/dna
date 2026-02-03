@@ -10,12 +10,33 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 
+/// A registered kind for dynamic MCP tool generation.
+///
+/// When registered, each kind generates three MCP tools with names following
+/// the pattern `dna_{prefix}_{action}` where:
+/// - `prefix` is the kind slug with hyphens replaced by underscores
+/// - `action` is one of: `search`, `add`, `list`
+///
+/// # Example
+/// A kind with slug "my-custom-kind" generates these tools:
+/// - `dna_my_custom_kind_search`
+/// - `dna_my_custom_kind_add`
+/// - `dna_my_custom_kind_list`
+///
+/// This naming convention follows MCP tool naming requirements (no hyphens).
+#[derive(Debug, Clone)]
+pub struct RegisteredKind {
+    pub slug: String,
+    pub description: String,
+}
+
 /// DNA MCP tool handler using rmcp SDK
 pub struct DnaToolHandler {
     artifact_service: Arc<ArtifactService>,
     search_service: Arc<SearchService>,
     include_tools: Option<Vec<String>>,
     exclude_tools: Option<Vec<String>>,
+    registered_kinds: Vec<RegisteredKind>,
 }
 
 impl Clone for DnaToolHandler {
@@ -25,6 +46,7 @@ impl Clone for DnaToolHandler {
             search_service: Arc::clone(&self.search_service),
             include_tools: self.include_tools.clone(),
             exclude_tools: self.exclude_tools.clone(),
+            registered_kinds: self.registered_kinds.clone(),
         }
     }
 }
@@ -45,6 +67,27 @@ impl DnaToolHandler {
             search_service,
             include_tools,
             exclude_tools,
+            registered_kinds: Vec::new(),
+        }
+    }
+
+    /// Create a handler with registered kinds for dynamic tool generation
+    pub fn with_kinds(
+        db: Arc<dyn Database>,
+        embedding: Arc<dyn EmbeddingProvider>,
+        include_tools: Option<Vec<String>>,
+        exclude_tools: Option<Vec<String>>,
+        kinds: Vec<RegisteredKind>,
+    ) -> Self {
+        let artifact_service = Arc::new(ArtifactService::new(db.clone(), embedding.clone()));
+        let search_service = Arc::new(SearchService::new(db, embedding));
+
+        Self {
+            artifact_service,
+            search_service,
+            include_tools,
+            exclude_tools,
+            registered_kinds: kinds,
         }
     }
 
@@ -209,6 +252,93 @@ impl DnaToolHandler {
         })
     }
 
+    /// Kind-scoped search
+    async fn dna_kind_search(
+        &self,
+        kind: &str,
+        request: KindSearchRequest,
+    ) -> Result<CallToolResult, ErrorData> {
+        let filters = SearchFilters {
+            kind: Some(kind.to_string()),
+            limit: request.limit,
+            ..Default::default()
+        };
+
+        let results = self
+            .search_service
+            .search(&request.query, filters)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let content = serde_json::to_string_pretty(&results)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        Ok(CallToolResult {
+            content: vec![Content::text(content)],
+            is_error: Some(false),
+            meta: None,
+            structured_content: None,
+        })
+    }
+
+    /// Kind-scoped add
+    async fn dna_kind_add(
+        &self,
+        kind: &str,
+        request: KindAddRequest,
+    ) -> Result<CallToolResult, ErrorData> {
+        let artifact = self
+            .artifact_service
+            .add(
+                kind.to_string(),
+                request.content,
+                request.format,
+                request.name,
+                request.metadata,
+            )
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let content = serde_json::to_string_pretty(&artifact)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        Ok(CallToolResult {
+            content: vec![Content::text(content)],
+            is_error: Some(false),
+            meta: None,
+            structured_content: None,
+        })
+    }
+
+    /// Kind-scoped list
+    async fn dna_kind_list(
+        &self,
+        kind: &str,
+        request: KindListRequest,
+    ) -> Result<CallToolResult, ErrorData> {
+        let filters = SearchFilters {
+            kind: Some(kind.to_string()),
+            limit: request.limit,
+            ..Default::default()
+        };
+
+        let artifacts = self
+            .artifact_service
+            .list(filters)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let content = serde_json::to_string_pretty(&artifacts)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        Ok(CallToolResult {
+            content: vec![Content::text(content)],
+            is_error: Some(false),
+            meta: None,
+            structured_content: None,
+        })
+    }
+
     /// Delete artifact
     async fn dna_remove(&self, request: RemoveRequest) -> Result<CallToolResult, ErrorData> {
         let removed = self
@@ -273,7 +403,7 @@ impl ServerHandler for DnaToolHandler {
         }
 
         // Get all tools
-        let all_tools = vec![
+        let mut all_tools = vec![
             Tool {
                 name: "dna_search".into(),
                 description: Some("Semantic search for truth artifacts".into()),
@@ -346,6 +476,50 @@ impl ServerHandler for DnaToolHandler {
             },
         ];
 
+        // Add kind-specific tools for each registered kind
+        for kind in &self.registered_kinds {
+            let prefix = kind.slug.replace('-', "_");
+
+            all_tools.push(Tool {
+                name: format!("dna_{}_search", prefix).into(),
+                description: Some(
+                    format!("Search {} artifacts: {}", kind.slug, kind.description).into(),
+                ),
+                input_schema: schema_to_json!(KindSearchRequest),
+                title: None,
+                output_schema: None,
+                annotations: None,
+                icons: None,
+                meta: None,
+            });
+
+            all_tools.push(Tool {
+                name: format!("dna_{}_add", prefix).into(),
+                description: Some(
+                    format!("Add a new {} artifact: {}", kind.slug, kind.description).into(),
+                ),
+                input_schema: schema_to_json!(KindAddRequest),
+                title: None,
+                output_schema: None,
+                annotations: None,
+                icons: None,
+                meta: None,
+            });
+
+            all_tools.push(Tool {
+                name: format!("dna_{}_list", prefix).into(),
+                description: Some(
+                    format!("List {} artifacts: {}", kind.slug, kind.description).into(),
+                ),
+                input_schema: schema_to_json!(KindListRequest),
+                title: None,
+                output_schema: None,
+                annotations: None,
+                icons: None,
+                meta: None,
+            });
+        }
+
         // Apply filters
         let tools: Vec<Tool> = all_tools
             .into_iter()
@@ -411,11 +585,52 @@ impl ServerHandler for DnaToolHandler {
                     .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
                 self.dna_remove(request).await
             },
-            _ => Err(ErrorData::new(
-                rmcp::model::ErrorCode(-32601),
-                format!("Unknown tool: {}", name),
-                None,
-            )),
+            _ => {
+                // Check for kind-specific tools: dna_{kind_prefix}_{action}
+                let name_str: &str = name.as_ref();
+                if let Some(rest) = name_str.strip_prefix("dna_") {
+                    for kind in &self.registered_kinds {
+                        let prefix = kind.slug.replace('-', "_");
+                        if let Some(action) =
+                            rest.strip_prefix(&prefix).and_then(|s| s.strip_prefix('_'))
+                        {
+                            return match action {
+                                "search" => {
+                                    let request: KindSearchRequest =
+                                        serde_json::from_value(arguments).map_err(|e| {
+                                            ErrorData::invalid_params(e.to_string(), None)
+                                        })?;
+                                    self.dna_kind_search(&kind.slug, request).await
+                                },
+                                "add" => {
+                                    let request: KindAddRequest = serde_json::from_value(arguments)
+                                        .map_err(|e| {
+                                            ErrorData::invalid_params(e.to_string(), None)
+                                        })?;
+                                    self.dna_kind_add(&kind.slug, request).await
+                                },
+                                "list" => {
+                                    let request: KindListRequest =
+                                        serde_json::from_value(arguments).map_err(|e| {
+                                            ErrorData::invalid_params(e.to_string(), None)
+                                        })?;
+                                    self.dna_kind_list(&kind.slug, request).await
+                                },
+                                _ => Err(ErrorData::new(
+                                    rmcp::model::ErrorCode(-32601),
+                                    format!("Unknown tool: {}", name),
+                                    None,
+                                )),
+                            };
+                        }
+                    }
+                }
+                Err(ErrorData::new(
+                    rmcp::model::ErrorCode(-32601),
+                    format!("Unknown tool: {}", name),
+                    None,
+                ))
+            },
         }
     }
 }
@@ -476,6 +691,30 @@ struct RemoveRequest {
     id: String,
 }
 
+// Kind-scoped request types (no kind field -- kind comes from tool name)
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct KindSearchRequest {
+    query: String,
+    #[serde(default = "default_limit")]
+    limit: Option<usize>,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct KindAddRequest {
+    content: String,
+    #[serde(default = "default_format")]
+    format: ContentFormat,
+    name: Option<String>,
+    #[serde(default)]
+    metadata: HashMap<String, String>,
+}
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct KindListRequest {
+    limit: Option<usize>,
+}
+
 fn default_limit() -> Option<usize> {
     Some(10)
 }
@@ -487,88 +726,7 @@ fn default_format() -> ContentFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{Artifact, SearchResult};
-    use anyhow::Result;
-    use std::sync::Mutex;
-
-    struct TestEmbedding;
-
-    #[async_trait::async_trait]
-    impl EmbeddingProvider for TestEmbedding {
-        async fn embed(&self, _text: &str) -> Result<Vec<f32>> {
-            Ok(vec![0.1, 0.2, 0.3])
-        }
-
-        async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>> {
-            Ok(texts.iter().map(|_| vec![0.1, 0.2, 0.3]).collect())
-        }
-
-        fn model_id(&self) -> &str {
-            "test-model"
-        }
-
-        fn dimensions(&self) -> usize {
-            3
-        }
-    }
-
-    struct TestDatabase {
-        artifacts: Mutex<HashMap<String, Artifact>>,
-    }
-
-    impl TestDatabase {
-        fn new() -> Self {
-            Self {
-                artifacts: Mutex::new(HashMap::new()),
-            }
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl Database for TestDatabase {
-        async fn insert(&self, artifact: &Artifact) -> Result<()> {
-            self.artifacts
-                .lock()
-                .unwrap()
-                .insert(artifact.id.clone(), artifact.clone());
-            Ok(())
-        }
-
-        async fn get(&self, id: &str) -> Result<Option<Artifact>> {
-            Ok(self.artifacts.lock().unwrap().get(id).cloned())
-        }
-
-        async fn update(&self, artifact: &Artifact) -> Result<()> {
-            self.artifacts
-                .lock()
-                .unwrap()
-                .insert(artifact.id.clone(), artifact.clone());
-            Ok(())
-        }
-
-        async fn delete(&self, id: &str) -> Result<bool> {
-            Ok(self.artifacts.lock().unwrap().remove(id).is_some())
-        }
-
-        async fn list(&self, _filters: SearchFilters) -> Result<Vec<Artifact>> {
-            Ok(self.artifacts.lock().unwrap().values().cloned().collect())
-        }
-
-        async fn search(
-            &self,
-            _query_embedding: &[f32],
-            _filters: SearchFilters,
-        ) -> Result<Vec<SearchResult>> {
-            let artifacts: Vec<_> = self.artifacts.lock().unwrap().values().cloned().collect();
-            Ok(artifacts
-                .into_iter()
-                .map(|a| SearchResult {
-                    artifact: a,
-                    score: 0.9,
-                })
-                .collect())
-        }
-    }
+    use crate::testing::{TestDatabase, TestEmbedding};
 
     fn test_handler() -> DnaToolHandler {
         let db: Arc<dyn Database> = Arc::new(TestDatabase::new());

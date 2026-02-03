@@ -238,6 +238,100 @@ async fn search_artifacts(
     }
 }
 
+// Kind-scoped request bodies (no kind field needed -- it comes from the URL)
+
+#[derive(Deserialize)]
+pub struct KindCreateBody {
+    content: String,
+    format: Option<String>,
+    name: Option<String>,
+    metadata: Option<HashMap<String, String>>,
+}
+
+#[derive(Deserialize)]
+pub struct KindSearchBody {
+    query: String,
+    limit: Option<usize>,
+}
+
+#[derive(Deserialize)]
+pub struct KindListQuery {
+    limit: Option<usize>,
+}
+
+async fn kind_list_artifacts(
+    State(state): State<AppState>,
+    Path(kind): Path<String>,
+    Query(query): Query<KindListQuery>,
+) -> axum::response::Response {
+    let filters = SearchFilters {
+        kind: Some(kind),
+        limit: query.limit,
+        ..Default::default()
+    };
+
+    match state.artifact_service.list(filters).await {
+        Ok(artifacts) => Json(serde_json::json!({"artifacts": artifacts})).into_response(),
+        Err(e) => error_response(
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "internal_error",
+            &e.to_string(),
+        ),
+    }
+}
+
+async fn kind_create_artifact(
+    State(state): State<AppState>,
+    Path(kind): Path<String>,
+    Json(body): Json<KindCreateBody>,
+) -> axum::response::Response {
+    let format = match body.format {
+        Some(ref f) => match parse_content_format(f) {
+            Ok(cf) => cf,
+            Err(msg) => {
+                return error_response(axum::http::StatusCode::BAD_REQUEST, "bad_request", &msg)
+            },
+        },
+        None => ContentFormat::Markdown,
+    };
+
+    let metadata = body.metadata.unwrap_or_default();
+
+    match state
+        .artifact_service
+        .add(kind, body.content, format, body.name, metadata)
+        .await
+    {
+        Ok(artifact) => (axum::http::StatusCode::CREATED, Json(artifact)).into_response(),
+        Err(e) => error_response(
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "internal_error",
+            &e.to_string(),
+        ),
+    }
+}
+
+async fn kind_search_artifacts(
+    State(state): State<AppState>,
+    Path(kind): Path<String>,
+    Json(body): Json<KindSearchBody>,
+) -> axum::response::Response {
+    let filters = SearchFilters {
+        kind: Some(kind),
+        limit: body.limit,
+        ..Default::default()
+    };
+
+    match state.search_service.search(&body.query, filters).await {
+        Ok(results) => Json(serde_json::json!({"results": results})).into_response(),
+        Err(e) => error_response(
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "internal_error",
+            &e.to_string(),
+        ),
+    }
+}
+
 async fn list_changes(
     State(state): State<AppState>,
     Query(query): Query<ListQuery>,
@@ -309,15 +403,30 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/search", post(search_artifacts))
         .route("/api/v1/changes", get(list_changes));
 
+    // Kind-scoped routes
+    let kind_write_routes = Router::new()
+        .route("/api/v1/kinds/{kind}/artifacts", post(kind_create_artifact))
+        .route_layer(middleware::from_fn(require_write));
+
+    let kind_read_routes = Router::new()
+        .route("/api/v1/kinds/{kind}/artifacts", get(kind_list_artifacts))
+        .route("/api/v1/kinds/{kind}/search", post(kind_search_artifacts));
+
     // Combine API routes with auth middleware
     let api_routes = Router::new()
         .merge(write_routes)
         .merge(read_routes)
+        .merge(kind_write_routes)
+        .merge(kind_read_routes)
         .route_layer(middleware::from_fn(auth_middleware))
         .layer(axum::Extension(api_key_auth));
 
-    // MCP routes
-    let mcp_routes = crate::mcp::mcp_router(state.db.clone(), state.embedding.clone());
+    // MCP routes (with dynamic kind-specific tools)
+    let mcp_routes = crate::mcp::mcp_router(
+        state.db.clone(),
+        state.embedding.clone(),
+        state.registered_kinds.clone(),
+    );
 
     Router::new()
         .route("/health", get(health))
