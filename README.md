@@ -54,37 +54,55 @@ DNA provides predefined templates for common use cases:
 | Template | Use Case | Kinds |
 |----------|----------|-------|
 | `intent` | Software systems | 11 kinds: intent, contract, algorithm, evaluation, pace, monitor, glossary, integration, reporting, compliance, constraint |
-| `ai-safety` | AI/LLM systems | 5 kinds: behavior, boundary, threat, eval, governance |
+| `agentic` | AI agents | 5 kinds: behavior, boundary, threat, eval, governance |
 
 ### Intent Template
 
 Truth artifacts that constrain implementations across any language or framework:
 
 ```mermaid
-flowchart TB
-    subgraph discovery["Discovery Agents"]
-        architect["Architect Agent"]
-        analyst["Analyst Agent"]
-        auditor["Compliance Agent"]
+flowchart RL
+    subgraph impl["Implementations"]
+        go["Go App"]
+        py["Python App"]
+        any["...any language"]
     end
-
-    dna["<b>DNA Layer</b><br/><i>intent, contract, constraint,<br/>evaluation, algorithm, ...</i>"]
 
     subgraph coding["Coding Agents"]
-        coder["Coder Agent"]
-        tester["Test Agent"]
-        reviewer["Review Agent"]
+        coder["Coder<br/><sub>intent, contract, algorithm</sub>"]
+        tester["Tester<br/><sub>evaluation, constraint</sub>"]
+        reviewer["Reviewer<br/><sub>compliance, constraint</sub>"]
     end
 
-    subgraph impl["Implementations"]
-        impl1["Go App"]
-        impl2["Python App"]
-        impl3["...any language"]
+    subgraph dna["DNA Layer"]
+        intent["intent"]
+        contract["contract"]
+        algorithm["algorithm"]
+        evaluation["evaluation"]
+        constraint["constraint"]
+        compliance["compliance"]
+        more["..."]
     end
 
-    discovery -->|"updates"| dna
-    dna -->|"constrains"| coding
-    coding -->|"produces"| impl
+    subgraph discovery["Discovery Agents"]
+        architect["Architect<br/><sub>discovers intent</sub>"]
+        analyst["Analyst<br/><sub>extracts contracts</sub>"]
+        auditor["Compliance<br/><sub>updates regulations</sub>"]
+    end
+
+    architect --> intent
+    analyst --> contract
+    auditor --> compliance
+    intent --> coder
+    contract --> coder
+    algorithm --> coder
+    evaluation --> tester
+    constraint --> tester
+    constraint --> reviewer
+    compliance --> reviewer
+    coder --> go
+    coder --> py
+    coder --> any
 
     style discovery fill:#d1fae5,stroke:#059669
     style dna fill:#fef3c7,stroke:#d97706
@@ -92,35 +110,51 @@ flowchart TB
     style impl fill:#f3f4f6,stroke:#6b7280
 ```
 
-### AI Safety Template
+### Agentic Template
 
-Truth artifacts for AI/LLM system safety and governance:
+Truth artifacts for AI agent safety and governance:
 
 ```mermaid
-flowchart TB
-    subgraph discovery["Governance Agents"]
-        threat_hunter["Threat Hunter"]
-        policy["Policy Agent"]
-        eval_agent["Eval Agent"]
+flowchart RL
+    subgraph impl["AI Systems"]
+        llm["LLM Agent"]
+        rag["RAG Pipeline"]
+        any["...any AI system"]
     end
-
-    dna["<b>DNA Layer</b><br/><i>behavior, boundary, threat,<br/>eval, governance</i>"]
 
     subgraph coding["Implementation Agents"]
-        safety_coder["Safety Coder"]
-        red_team["Red Team Agent"]
-        monitor_agent["Monitor Agent"]
+        safety["Safety Coder<br/><sub>behavior, boundary</sub>"]
+        redteam["Red Team<br/><sub>threat, eval</sub>"]
+        monitor["Monitor<br/><sub>governance, boundary</sub>"]
     end
 
-    subgraph impl["AI Systems"]
-        impl1["LLM Agent"]
-        impl2["RAG Pipeline"]
-        impl3["...any AI system"]
+    subgraph dna["DNA Layer"]
+        behavior["behavior"]
+        boundary["boundary"]
+        threat["threat"]
+        eval["eval"]
+        governance["governance"]
     end
 
-    discovery -->|"updates"| dna
-    dna -->|"constrains"| coding
-    coding -->|"produces"| impl
+    subgraph discovery["Governance Agents"]
+        hunter["Threat Hunter<br/><sub>discovers risks</sub>"]
+        policy["Policy<br/><sub>defines boundaries</sub>"]
+        eval_agent["Eval<br/><sub>creates benchmarks</sub>"]
+    end
+
+    hunter --> threat
+    policy --> boundary
+    policy --> governance
+    eval_agent --> eval
+    behavior --> safety
+    boundary --> safety
+    boundary --> monitor
+    threat --> redteam
+    eval --> redteam
+    governance --> monitor
+    safety --> llm
+    safety --> rag
+    safety --> any
 
     style discovery fill:#fce7f3,stroke:#db2777
     style dna fill:#dbeafe,stroke:#2563eb
@@ -133,7 +167,7 @@ flowchart TB
 dna init --list-templates
 
 # Initialize with AI safety template
-dna init --template ai-safety
+dna init --template agentic
 ```
 
 See [docs/templates/](docs/templates/) for detailed documentation on each template.

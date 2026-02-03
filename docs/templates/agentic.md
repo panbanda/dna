@@ -1,6 +1,6 @@
-# AI Safety Template
+# Agentic Template
 
-Safety and governance for AI/LLM systems. This template provides a structured way to document and enforce safety requirements, threat mitigations, and governance controls for AI applications.
+Safety and governance for AI agents and LLM systems. This template provides a structured way to document and enforce safety requirements, threat mitigations, and governance controls for AI applications.
 
 ## Philosophy
 
@@ -240,10 +240,10 @@ dna add governance "Incident response plan for AI safety events" --label aspect=
 
 ## Usage
 
-Initialize a project with the AI safety template:
+Initialize a project with the agentic template:
 
 ```bash
-dna init --template ai-safety
+dna init --template agentic
 ```
 
 Combine with intent template for comprehensive coverage:

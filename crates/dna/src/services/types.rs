@@ -469,10 +469,10 @@ pub static TEMPLATE_INTENT: Template = Template {
     ],
 };
 
-/// AI Safety template: safety and governance for AI/LLM systems
-pub static TEMPLATE_AI_SAFETY: Template = Template {
-    name: "ai-safety",
-    description: "Safety and governance for AI/LLM systems",
+/// Agentic template: safety and governance for AI agents and LLM systems
+pub static TEMPLATE_AGENTIC: Template = Template {
+    name: "agentic",
+    description: "Safety and governance for AI agents and LLM systems",
     kinds: &[
         TemplateKind {
             slug: "behavior",
@@ -498,7 +498,7 @@ pub static TEMPLATE_AI_SAFETY: Template = Template {
 };
 
 /// All available templates
-pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT, &TEMPLATE_AI_SAFETY];
+pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT, &TEMPLATE_AGENTIC];
 
 /// Get a template by name
 pub fn get_template(name: &str) -> Option<&'static Template> {
@@ -1100,21 +1100,21 @@ mod tests {
         fn list_templates_includes_all() {
             let templates = list_templates();
             assert!(templates.contains(&"intent"));
-            assert!(templates.contains(&"ai-safety"));
+            assert!(templates.contains(&"agentic"));
             assert_eq!(templates.len(), 2);
         }
 
         #[test]
-        fn get_ai_safety_template() {
-            let template = get_template("ai-safety");
+        fn get_agentic_template() {
+            let template = get_template("agentic");
             assert!(template.is_some());
             let template = template.unwrap();
-            assert_eq!(template.name, "ai-safety");
+            assert_eq!(template.name, "agentic");
         }
 
         #[test]
-        fn ai_safety_template_has_expected_kinds() {
-            let template = get_template("ai-safety").unwrap();
+        fn agentic_template_has_expected_kinds() {
+            let template = get_template("agentic").unwrap();
             let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
 
             assert!(slugs.contains(&"behavior"));
