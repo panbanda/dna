@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::{Args, Subcommand};
-use dna::services::{slugify_kind, ConfigService};
+use dna::services::{slugify_kind, ConfigService, KindValidationError};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -44,6 +44,10 @@ pub struct KindShowArgs {
 pub struct KindRemoveArgs {
     /// Kind slug
     pub slug: String,
+
+    /// Force removal without warning
+    #[arg(long, short)]
+    pub force: bool,
 }
 
 pub async fn execute(args: KindArgs) -> Result<()> {
@@ -70,7 +74,19 @@ async fn execute_add(args: KindAddArgs) -> Result<()> {
         .description
         .unwrap_or_else(|| format!("{} artifacts", args.name));
 
-    let added = config_service.add_kind(&slug, &description)?;
+    let added = match config_service.add_kind(&slug, &description) {
+        Ok(added) => added,
+        Err(e) => {
+            // Check if it's a validation error and provide a user-friendly message
+            if let Some(validation_error) = e.downcast_ref::<KindValidationError>() {
+                return Err(anyhow::anyhow!(
+                    "{}",
+                    format_validation_error(validation_error)
+                ));
+            }
+            return Err(e);
+        },
+    };
     if added {
         println!("Added kind: {}", slug);
         println!("  Description: {}", description);
@@ -181,12 +197,61 @@ async fn execute_remove(args: KindRemoveArgs) -> Result<()> {
     }
 
     let slug = slugify_kind(&args.slug);
+
+    // Check if kind exists first
+    let config = config_service.load()?;
+    if config.kinds.get(&slug).is_none() {
+        println!("Kind '{}' not found.", slug);
+        return Ok(());
+    }
+
+    // Warn about potential orphaned artifacts
+    if !args.force {
+        eprintln!(
+            "Warning: Removing kind '{}' will not delete existing artifacts.",
+            slug
+        );
+        eprintln!("         Artifacts of this kind will become orphaned and may not");
+        eprintln!("         appear in kind-filtered searches or API endpoints.");
+        eprintln!();
+        eprintln!("To proceed, re-run with --force or -f");
+        return Ok(());
+    }
+
     let removed = config_service.remove_kind(&slug)?;
     if removed {
         println!("Removed kind: {}", slug);
-    } else {
-        println!("Kind '{}' not found.", slug);
     }
 
     Ok(())
+}
+
+fn format_validation_error(error: &KindValidationError) -> String {
+    match error {
+        KindValidationError::Empty => "Kind slug cannot be empty".to_string(),
+        KindValidationError::TooShort { min, actual } => {
+            format!(
+                "Kind slug '{}' is too short (minimum {} characters, got {})",
+                "", min, actual
+            )
+        },
+        KindValidationError::TooLong { max, actual } => {
+            format!(
+                "Kind slug is too long (maximum {} characters, got {})",
+                max, actual
+            )
+        },
+        KindValidationError::Reserved { slug } => {
+            format!(
+                "Kind slug '{}' is reserved. Reserved slugs: all, any, artifact, artifacts, config, default, kind, kinds, none, search, system",
+                slug
+            )
+        },
+        KindValidationError::InvalidChars { slug } => {
+            format!(
+                "Kind slug '{}' contains invalid characters. Use only lowercase letters, numbers, and hyphens.",
+                slug
+            )
+        },
+    }
 }

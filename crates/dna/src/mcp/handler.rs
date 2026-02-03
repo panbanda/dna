@@ -10,7 +10,20 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::sync::Arc;
 
-/// A registered kind for dynamic MCP tool generation
+/// A registered kind for dynamic MCP tool generation.
+///
+/// When registered, each kind generates three MCP tools with names following
+/// the pattern `dna_{prefix}_{action}` where:
+/// - `prefix` is the kind slug with hyphens replaced by underscores
+/// - `action` is one of: `search`, `add`, `list`
+///
+/// # Example
+/// A kind with slug "my-custom-kind" generates these tools:
+/// - `dna_my_custom_kind_search`
+/// - `dna_my_custom_kind_add`
+/// - `dna_my_custom_kind_list`
+///
+/// This naming convention follows MCP tool naming requirements (no hyphens).
 #[derive(Debug, Clone)]
 pub struct RegisteredKind {
     pub slug: String,
@@ -713,88 +726,7 @@ fn default_format() -> ContentFormat {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::services::{Artifact, SearchResult};
-    use anyhow::Result;
-    use std::sync::Mutex;
-
-    struct TestEmbedding;
-
-    #[async_trait::async_trait]
-    impl EmbeddingProvider for TestEmbedding {
-        async fn embed(&self, _text: &str) -> Result<Vec<f32>> {
-            Ok(vec![0.1, 0.2, 0.3])
-        }
-
-        async fn embed_batch(&self, texts: &[&str]) -> Result<Vec<Vec<f32>>> {
-            Ok(texts.iter().map(|_| vec![0.1, 0.2, 0.3]).collect())
-        }
-
-        fn model_id(&self) -> &str {
-            "test-model"
-        }
-
-        fn dimensions(&self) -> usize {
-            3
-        }
-    }
-
-    struct TestDatabase {
-        artifacts: Mutex<HashMap<String, Artifact>>,
-    }
-
-    impl TestDatabase {
-        fn new() -> Self {
-            Self {
-                artifacts: Mutex::new(HashMap::new()),
-            }
-        }
-    }
-
-    #[async_trait::async_trait]
-    impl Database for TestDatabase {
-        async fn insert(&self, artifact: &Artifact) -> Result<()> {
-            self.artifacts
-                .lock()
-                .unwrap()
-                .insert(artifact.id.clone(), artifact.clone());
-            Ok(())
-        }
-
-        async fn get(&self, id: &str) -> Result<Option<Artifact>> {
-            Ok(self.artifacts.lock().unwrap().get(id).cloned())
-        }
-
-        async fn update(&self, artifact: &Artifact) -> Result<()> {
-            self.artifacts
-                .lock()
-                .unwrap()
-                .insert(artifact.id.clone(), artifact.clone());
-            Ok(())
-        }
-
-        async fn delete(&self, id: &str) -> Result<bool> {
-            Ok(self.artifacts.lock().unwrap().remove(id).is_some())
-        }
-
-        async fn list(&self, _filters: SearchFilters) -> Result<Vec<Artifact>> {
-            Ok(self.artifacts.lock().unwrap().values().cloned().collect())
-        }
-
-        async fn search(
-            &self,
-            _query_embedding: &[f32],
-            _filters: SearchFilters,
-        ) -> Result<Vec<SearchResult>> {
-            let artifacts: Vec<_> = self.artifacts.lock().unwrap().values().cloned().collect();
-            Ok(artifacts
-                .into_iter()
-                .map(|a| SearchResult {
-                    artifact: a,
-                    score: 0.9,
-                })
-                .collect())
-        }
-    }
+    use crate::testing::{TestDatabase, TestEmbedding};
 
     fn test_handler() -> DnaToolHandler {
         let db: Arc<dyn Database> = Arc::new(TestDatabase::new());

@@ -3,9 +3,124 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// Maximum length for a kind slug (64 characters).
+pub const KIND_SLUG_MAX_LENGTH: usize = 64;
+
+/// Minimum length for a kind slug (2 characters).
+pub const KIND_SLUG_MIN_LENGTH: usize = 2;
+
+/// Reserved kind slugs that cannot be used.
+pub const RESERVED_KIND_SLUGS: &[&str] = &[
+    "all",
+    "any",
+    "artifact",
+    "artifacts",
+    "config",
+    "default",
+    "kind",
+    "kinds",
+    "none",
+    "search",
+    "system",
+];
+
 /// Transform a kind string to kebab-case slug.
 pub fn slugify_kind(input: &str) -> String {
     slug::slugify(input)
+}
+
+/// Error returned when kind slug validation fails.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum KindValidationError {
+    /// Slug is empty after slugification.
+    Empty,
+    /// Slug is too short.
+    TooShort { min: usize, actual: usize },
+    /// Slug is too long.
+    TooLong { max: usize, actual: usize },
+    /// Slug is a reserved word.
+    Reserved { slug: String },
+    /// Slug contains invalid characters (should not happen after slugify).
+    InvalidChars { slug: String },
+}
+
+impl std::fmt::Display for KindValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            KindValidationError::Empty => write!(f, "kind slug cannot be empty"),
+            KindValidationError::TooShort { min, actual } => {
+                write!(
+                    f,
+                    "kind slug too short: minimum {} characters, got {}",
+                    min, actual
+                )
+            },
+            KindValidationError::TooLong { max, actual } => {
+                write!(
+                    f,
+                    "kind slug too long: maximum {} characters, got {}",
+                    max, actual
+                )
+            },
+            KindValidationError::Reserved { slug } => {
+                write!(f, "kind slug '{}' is reserved", slug)
+            },
+            KindValidationError::InvalidChars { slug } => {
+                write!(f, "kind slug '{}' contains invalid characters", slug)
+            },
+        }
+    }
+}
+
+impl std::error::Error for KindValidationError {}
+
+/// Validate a kind slug.
+///
+/// Returns Ok(()) if the slug is valid, or an error describing why it's invalid.
+/// The slug should already be slugified before calling this function.
+pub fn validate_kind_slug(slug: &str) -> Result<(), KindValidationError> {
+    if slug.is_empty() {
+        return Err(KindValidationError::Empty);
+    }
+
+    if slug.len() < KIND_SLUG_MIN_LENGTH {
+        return Err(KindValidationError::TooShort {
+            min: KIND_SLUG_MIN_LENGTH,
+            actual: slug.len(),
+        });
+    }
+
+    if slug.len() > KIND_SLUG_MAX_LENGTH {
+        return Err(KindValidationError::TooLong {
+            max: KIND_SLUG_MAX_LENGTH,
+            actual: slug.len(),
+        });
+    }
+
+    if RESERVED_KIND_SLUGS.contains(&slug) {
+        return Err(KindValidationError::Reserved {
+            slug: slug.to_string(),
+        });
+    }
+
+    // Verify slug only contains valid characters (lowercase alphanumeric and hyphens)
+    if !slug
+        .chars()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+    {
+        return Err(KindValidationError::InvalidChars {
+            slug: slug.to_string(),
+        });
+    }
+
+    // Ensure slug doesn't start or end with hyphen
+    if slug.starts_with('-') || slug.ends_with('-') {
+        return Err(KindValidationError::InvalidChars {
+            slug: slug.to_string(),
+        });
+    }
+
+    Ok(())
 }
 
 /// Content format enumeration
@@ -564,6 +679,120 @@ mod tests {
             assert!(filters.after.is_none());
             assert!(filters.before.is_none());
             assert!(filters.limit.is_none());
+        }
+    }
+
+    mod kind_validation {
+        use super::*;
+
+        #[test]
+        fn valid_slugs_pass() {
+            let valid = ["intent", "my-kind", "custom-type-123", "ab"];
+            for slug in valid {
+                assert!(
+                    validate_kind_slug(slug).is_ok(),
+                    "Expected '{}' to be valid",
+                    slug
+                );
+            }
+        }
+
+        #[test]
+        fn empty_slug_rejected() {
+            assert_eq!(validate_kind_slug(""), Err(KindValidationError::Empty));
+        }
+
+        #[test]
+        fn too_short_rejected() {
+            assert_eq!(
+                validate_kind_slug("a"),
+                Err(KindValidationError::TooShort { min: 2, actual: 1 })
+            );
+        }
+
+        #[test]
+        fn too_long_rejected() {
+            let long_slug = "a".repeat(65);
+            assert_eq!(
+                validate_kind_slug(&long_slug),
+                Err(KindValidationError::TooLong {
+                    max: 64,
+                    actual: 65
+                })
+            );
+        }
+
+        #[test]
+        fn max_length_slug_accepted() {
+            let max_slug = "a".repeat(64);
+            assert!(validate_kind_slug(&max_slug).is_ok());
+        }
+
+        #[test]
+        fn reserved_slugs_rejected() {
+            for reserved in RESERVED_KIND_SLUGS {
+                assert_eq!(
+                    validate_kind_slug(reserved),
+                    Err(KindValidationError::Reserved {
+                        slug: reserved.to_string()
+                    }),
+                    "Expected '{}' to be rejected as reserved",
+                    reserved
+                );
+            }
+        }
+
+        #[test]
+        fn invalid_chars_rejected() {
+            let invalid = ["UPPER", "with_underscore", "with space", "with.dot"];
+            for slug in invalid {
+                assert!(
+                    matches!(
+                        validate_kind_slug(slug),
+                        Err(KindValidationError::InvalidChars { .. })
+                    ),
+                    "Expected '{}' to be rejected for invalid chars",
+                    slug
+                );
+            }
+        }
+
+        #[test]
+        fn leading_hyphen_rejected() {
+            assert!(matches!(
+                validate_kind_slug("-leading"),
+                Err(KindValidationError::InvalidChars { .. })
+            ));
+        }
+
+        #[test]
+        fn trailing_hyphen_rejected() {
+            assert!(matches!(
+                validate_kind_slug("trailing-"),
+                Err(KindValidationError::InvalidChars { .. })
+            ));
+        }
+
+        #[test]
+        fn error_display_messages() {
+            assert_eq!(
+                KindValidationError::Empty.to_string(),
+                "kind slug cannot be empty"
+            );
+            assert!(KindValidationError::TooShort { min: 2, actual: 1 }
+                .to_string()
+                .contains("too short"));
+            assert!(KindValidationError::TooLong {
+                max: 64,
+                actual: 65
+            }
+            .to_string()
+            .contains("too long"));
+            assert!(KindValidationError::Reserved {
+                slug: "all".to_string()
+            }
+            .to_string()
+            .contains("reserved"));
         }
     }
 }

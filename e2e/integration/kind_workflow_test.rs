@@ -187,12 +187,33 @@ mod kind_workflow_tests {
     }
 
     #[test]
-    fn test_kind_remove() {
+    fn test_kind_remove_warns_without_force() {
+        let ctx = TestContext::new();
+        ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+
+        // Without --force, should warn about orphaned artifacts
+        ctx.cmd()
+            .args(["kind", "remove", "monitor"])
+            .assert()
+            .success()
+            .stderr(predicate::str::contains("Warning"))
+            .stderr(predicate::str::contains("orphaned"));
+
+        // Kind should still exist
+        ctx.cmd()
+            .args(["kind", "list"])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("monitor"));
+    }
+
+    #[test]
+    fn test_kind_remove_with_force() {
         let ctx = TestContext::new();
         ctx.cmd().args(["init", "--intent-flow"]).assert().success();
 
         ctx.cmd()
-            .args(["kind", "remove", "monitor"])
+            .args(["kind", "remove", "monitor", "--force"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Removed kind: monitor"));
@@ -210,8 +231,9 @@ mod kind_workflow_tests {
         let ctx = TestContext::new();
         ctx.cmd().args(["init"]).assert().success();
 
+        // Nonexistent kind should report not found regardless of --force
         ctx.cmd()
-            .args(["kind", "remove", "nonexistent"])
+            .args(["kind", "remove", "nonexistent", "--force"])
             .assert()
             .success()
             .stdout(predicate::str::contains("not found"));

@@ -148,8 +148,14 @@ impl ConfigService {
         Ok(config)
     }
 
-    /// Add a kind to the config
+    /// Add a kind to the config.
+    ///
+    /// Validates the slug before adding. Returns an error if the slug is invalid.
+    /// Returns Ok(false) if the kind already exists.
     pub fn add_kind(&self, slug: &str, description: &str) -> Result<bool> {
+        // Validate slug before adding
+        super::validate_kind_slug(slug)?;
+
         let mut config = self.load()?;
         let added = config.kinds.add(slug.to_string(), description.to_string());
         if added {
