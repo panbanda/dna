@@ -2,7 +2,7 @@
 
 /// E2E integration tests for the kind workflow
 ///
-/// Tests the complete kind management workflow: init --intent-flow, kind add/list/show/remove,
+/// Tests the complete kind management workflow: init --template, kind add/list/show/remove,
 /// and kind-scoped operations (add, list, search)
 use assert_cmd::Command;
 use predicates::prelude::*;
@@ -35,24 +35,28 @@ impl TestContext {
     }
 }
 
-// -- Init with intent-flow tests --
+// -- Init with template tests --
 
 #[test]
-fn test_init_intent_flow_registers_seven_kinds() {
+fn test_init_intent_template_registers_eleven_kinds() {
     let ctx = TestContext::new();
 
     ctx.cmd()
-        .args(["init", "--intent-flow"])
+        .args(["init", "--template", "intent"])
         .assert()
         .success()
-        .stdout(predicate::str::contains("Intent-flow kinds registered"))
+        .stdout(predicate::str::contains("Template 'intent' applied"))
         .stdout(predicate::str::contains("intent"))
-        .stdout(predicate::str::contains("invariant"))
         .stdout(predicate::str::contains("contract"))
         .stdout(predicate::str::contains("algorithm"))
         .stdout(predicate::str::contains("evaluation"))
         .stdout(predicate::str::contains("pace"))
-        .stdout(predicate::str::contains("monitor"));
+        .stdout(predicate::str::contains("monitor"))
+        .stdout(predicate::str::contains("glossary"))
+        .stdout(predicate::str::contains("integration"))
+        .stdout(predicate::str::contains("reporting"))
+        .stdout(predicate::str::contains("compliance"))
+        .stdout(predicate::str::contains("constraint"));
 
     // Verify config file has kinds
     let config = std::fs::read_to_string(ctx.dna_dir().join("config.toml")).unwrap();
@@ -60,22 +64,29 @@ fn test_init_intent_flow_registers_seven_kinds() {
 }
 
 #[test]
-fn test_init_intent_flow_creates_config_with_kinds() {
+fn test_init_intent_template_creates_config_with_kinds() {
     let ctx = TestContext::new();
 
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     let config = std::fs::read_to_string(ctx.dna_dir().join("config.toml")).unwrap();
 
     // Verify each kind is in the config
     for kind in [
         "intent",
-        "invariant",
         "contract",
         "algorithm",
         "evaluation",
         "pace",
         "monitor",
+        "glossary",
+        "integration",
+        "reporting",
+        "compliance",
+        "constraint",
     ] {
         assert!(
             config.contains(&format!("slug = \"{}\"", kind)),
@@ -85,12 +96,54 @@ fn test_init_intent_flow_creates_config_with_kinds() {
     }
 }
 
+#[test]
+fn test_init_ai_safety_template() {
+    let ctx = TestContext::new();
+
+    ctx.cmd()
+        .args(["init", "--template", "ai-safety"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Template 'ai-safety' applied"))
+        .stdout(predicate::str::contains("behavior"))
+        .stdout(predicate::str::contains("boundary"))
+        .stdout(predicate::str::contains("threat"))
+        .stdout(predicate::str::contains("eval"))
+        .stdout(predicate::str::contains("governance"));
+}
+
+#[test]
+fn test_init_unknown_template_fails() {
+    let ctx = TestContext::new();
+
+    ctx.cmd()
+        .args(["init", "--template", "nonexistent"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("Unknown template"));
+}
+
+#[test]
+fn test_list_templates() {
+    let ctx = TestContext::new();
+
+    ctx.cmd()
+        .args(["init", "--list-templates"])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("intent"))
+        .stdout(predicate::str::contains("ai-safety"));
+}
+
 // -- Kind management CLI tests --
 
 #[test]
 fn test_kind_list_shows_registered_kinds() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     ctx.cmd()
         .args(["kind", "list"])
@@ -102,7 +155,7 @@ fn test_kind_list_shows_registered_kinds() {
 }
 
 #[test]
-fn test_kind_list_empty_without_intent_flow() {
+fn test_kind_list_empty_without_template() {
     let ctx = TestContext::new();
     ctx.cmd().args(["init"]).assert().success();
 
@@ -159,7 +212,10 @@ fn test_kind_add_slugifies_name() {
 #[test]
 fn test_kind_add_duplicate_reports_exists() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     ctx.cmd()
         .args(["kind", "add", "evaluation", "Test evaluation kind"])
@@ -171,7 +227,10 @@ fn test_kind_add_duplicate_reports_exists() {
 #[test]
 fn test_kind_show_displays_operations() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     ctx.cmd()
         .args(["kind", "show", "evaluation"])
@@ -201,7 +260,10 @@ fn test_kind_show_not_found() {
 #[test]
 fn test_kind_remove_warns_without_force() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     // Without --force, should warn about orphaned artifacts
     ctx.cmd()
@@ -222,7 +284,10 @@ fn test_kind_remove_warns_without_force() {
 #[test]
 fn test_kind_remove_with_force() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     ctx.cmd()
         .args(["kind", "remove", "monitor", "--force"])
@@ -256,7 +321,10 @@ fn test_kind_remove_nonexistent() {
 #[test]
 fn test_add_artifact_with_registered_kind() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     ctx.cmd()
         .args([
@@ -291,7 +359,10 @@ fn test_add_artifact_with_custom_kind() {
 #[test]
 fn test_list_filters_by_kind() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     // Add artifacts of different kinds
     ctx.cmd()
@@ -319,16 +390,19 @@ fn test_list_filters_by_kind() {
 // -- Full workflow tests --
 
 #[test]
-fn test_full_intent_flow_workflow() {
+fn test_full_intent_template_workflow() {
     let ctx = TestContext::new();
 
-    // Step 1: Initialize with intent-flow
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    // Step 1: Initialize with intent template
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
-    // Step 2: Add truth artifacts for each kind
+    // Step 2: Add truth artifacts for various kinds
     let artifacts = [
         ("intent", "Users can authenticate via email and password"),
-        ("invariant", "Passwords must be hashed with bcrypt"),
+        ("constraint", "Passwords must be hashed with bcrypt"),
         ("contract", "POST /auth/login returns JWT token"),
         (
             "algorithm",
@@ -422,7 +496,10 @@ fn test_kind_show_displays_correct_mcp_tool_names() {
 #[test]
 fn test_add_artifact_with_context() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     // Add artifact with context
     ctx.cmd()
@@ -444,7 +521,10 @@ fn test_add_artifact_with_context() {
 #[test]
 fn test_update_artifact_context() {
     let ctx = TestContext::new();
-    ctx.cmd().args(["init", "--intent-flow"]).assert().success();
+    ctx.cmd()
+        .args(["init", "--template", "intent"])
+        .assert()
+        .success();
 
     // Add artifact
     let output = ctx
