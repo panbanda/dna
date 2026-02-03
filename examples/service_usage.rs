@@ -76,6 +76,7 @@ async fn main() -> Result<()> {
             ContentFormat::Markdown,
             Some("Account Creation Intent".to_string()),
             HashMap::from([("domain".to_string(), "user-management".to_string())]),
+            None,
         )
         .await?;
     println!(
@@ -97,6 +98,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
                 ("domain".to_string(), "user-management".to_string()),
                 ("version".to_string(), "v1".to_string()),
             ]),
+            None,
         )
         .await?;
     println!(
@@ -112,6 +114,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
             ContentFormat::Markdown,
             Some("Email Uniqueness".to_string()),
             HashMap::from([("domain".to_string(), "user-management".to_string())]),
+            None,
         )
         .await?;
     println!(
@@ -154,6 +157,7 @@ Response: { "id": string, "email": string, "verified": boolean }"#
             None,
             None,
             Some(HashMap::from([("priority".to_string(), "high".to_string())])),
+            None,
         )
         .await?;
     println!("   Updated: {}", updated.name.as_ref().unwrap());
