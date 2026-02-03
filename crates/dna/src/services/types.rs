@@ -427,10 +427,6 @@ pub static TEMPLATE_INTENT: Template = Template {
             description: "Declarative 'must' statement: one user-observable outcome or rule. No implementation. Ex: 'Orders must not ship until payment confirmed'",
         },
         TemplateKind {
-            slug: "invariant",
-            description: "Always-true property: one verifiable constraint. Ex: 'Account balance >= 0'",
-        },
-        TemplateKind {
             slug: "contract",
             description: "External promise: one endpoint, event, or interface. Ex: 'POST /orders returns 201 with order_id'",
         },
@@ -440,7 +436,7 @@ pub static TEMPLATE_INTENT: Template = Template {
         },
         TemplateKind {
             slug: "evaluation",
-            description: "Executable test: one scenario or property. Ex: 'Given expired token, then 401'",
+            description: "Executable test: one invariant, scenario, or regression. Use --label type=invariant|scenario|regression. Ex: 'Account balance >= 0' or 'Given expired token, then 401'",
         },
         TemplateKind {
             slug: "pace",
@@ -464,15 +460,11 @@ pub static TEMPLATE_INTENT: Template = Template {
         },
         TemplateKind {
             slug: "compliance",
-            description: "Regulatory or legal requirement: one obligation from GDPR, HIPAA, PCI-DSS, SOC2, etc. Ex: 'PII must be deletable within 30 days of request'",
+            description: "Regulatory or legal obligation: one requirement from GDPR, HIPAA, PCI-DSS, SOC2, etc. Use --label regulation=x. Ex: 'PII must be deletable within 30 days of request'",
         },
         TemplateKind {
             slug: "constraint",
             description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
-        },
-        TemplateKind {
-            slug: "requirement",
-            description: "Stakeholder or client requirement: one contractual or business need from customers, partners, or internal teams. Ex: 'Enterprise tier requires SSO integration'",
         },
     ],
 };
@@ -1088,7 +1080,6 @@ mod tests {
             let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
 
             assert!(slugs.contains(&"intent"));
-            assert!(slugs.contains(&"invariant"));
             assert!(slugs.contains(&"contract"));
             assert!(slugs.contains(&"algorithm"));
             assert!(slugs.contains(&"evaluation"));
@@ -1099,8 +1090,7 @@ mod tests {
             assert!(slugs.contains(&"reporting"));
             assert!(slugs.contains(&"compliance"));
             assert!(slugs.contains(&"constraint"));
-            assert!(slugs.contains(&"requirement"));
-            assert_eq!(slugs.len(), 13);
+            assert_eq!(slugs.len(), 11);
         }
 
         #[test]
