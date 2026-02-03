@@ -1,5 +1,39 @@
 # Changelog
 
+## [0.3.0](https://github.com/panbanda/dna/compare/dna-v0.2.1...dna-v0.3.0) (2026-02-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **cli:** `dna kind add` now requires description as positional argument `--meta` renamed to `--label` (short: `-l`)
+
+### Features
+
+* add ai-safety template and documentation ([0985ba3](https://github.com/panbanda/dna/commit/0985ba3e86b55a0b2ca23e84fbaa0c8c61d4dd9f))
+* add constraint and requirement kinds to intent template ([5fcbbf9](https://github.com/panbanda/dna/commit/5fcbbf9605a2272213b6af3553cae1740619c465))
+* add versioning and prune commands for storage management ([ced2ba1](https://github.com/panbanda/dna/commit/ced2ba1ccd3c3f97d4d74b5b7e5c5d44a7fc4a4b))
+* add versioning and prune commands for storage management ([b7b4608](https://github.com/panbanda/dna/commit/b7b4608be4725b7dfb2d167cdba8ba6bd90dfb79))
+* **cli:** add --label, --context flags and improve CLI documentation ([e68131e](https://github.com/panbanda/dna/commit/e68131edac6ce23c9a4b5300b720f811226f9356))
+* implement reindex filtering and improve documentation ([8f69ff3](https://github.com/panbanda/dna/commit/8f69ff3d81d7c40fa2ac94f16d31fe9c8e6f924c))
+* **kind:** implement dynamic artifact kind system ([0d82a20](https://github.com/panbanda/dna/commit/0d82a20cce87074e023816c8d2c25f9e118c6b57))
+* **kind:** implement dynamic artifact kind system ([c471b6f](https://github.com/panbanda/dna/commit/c471b6f5a1fff144439e8f289250889a570c35f7))
+* replace --intent-flow with generic --template system ([7452ed2](https://github.com/panbanda/dna/commit/7452ed2e46e8fdf457fb276458a18b4ac4abf967))
+* replace --intent-flow with generic --template system ([bb447c1](https://github.com/panbanda/dna/commit/bb447c1dc13cfc85c04f8a687bfa84a483d5dbc1))
+
+
+### Bug Fixes
+
+* add missing context parameter to all call sites ([2aa7bc4](https://github.com/panbanda/dna/commit/2aa7bc41c1d8e2fb36adaa63732b479141ead6d8))
+* address clippy warning for literal format string ([18baf13](https://github.com/panbanda/dna/commit/18baf136341433e82e56881313dadeb315e7ecea))
+* address clippy warnings ([55633a0](https://github.com/panbanda/dna/commit/55633a0c8312763960374bfc1e74cabc9f26c039))
+* **ci:** remove release build from CI to stay within runner disk limits ([f30eadc](https://github.com/panbanda/dna/commit/f30eadcd2e51ee82a156e021a300b08971489ef5))
+* **kind:** address code review feedback ([6edb6d7](https://github.com/panbanda/dna/commit/6edb6d71a396351cc959d01c43e6194a666b51be))
+* move SearchResult import to test module ([0ca7b19](https://github.com/panbanda/dna/commit/0ca7b19f802f41f67dfe6167a0aa29bf76e01302))
+* **test:** update CLI tests for new kind add positional syntax ([1730a3f](https://github.com/panbanda/dna/commit/1730a3f5dfd39185f505bb3956fba1541f011caf))
+* **test:** update list assertions to match actual CLI output ([f55939d](https://github.com/panbanda/dna/commit/f55939d8a3dab78118b3df50df68398a10e48bd4))
+* update CLI tests to use --template instead of --intent-flow ([a160e6d](https://github.com/panbanda/dna/commit/a160e6d9b174fbc95d7edc93d4096423fce2b31d))
+* use clap ArgGroup for reindex and add missing import ([40f279a](https://github.com/panbanda/dna/commit/40f279a9af1cf5fa8ceedf1ebe625a96ba690305))
+
 ## [0.2.1](https://github.com/panbanda/dna/compare/dna-v0.2.0...dna-v0.2.1) (2026-01-29)
 
 
