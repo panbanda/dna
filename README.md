@@ -89,21 +89,19 @@ flowchart LR
         any(["any..."])
     end
 
-    architect -.->|discovers| intent
-    analyst -.->|extracts| contract
-    auditor -.->|updates| compliance
+    subgraph increments["Increments"]
+        pr(["PR"])
+    end
 
-    intent -->|guides| coder
-    contract -->|guides| coder
-    algorithm -->|guides| coder
-    evaluation -->|validates| tester
-    constraint -->|bounds| tester
-    constraint -->|bounds| reviewer
-    compliance -->|enforces| reviewer
+    discovery -.->|updates| dna
 
-    coder ==>|produces| go
-    coder ==>|produces| py
-    coder ==>|produces| any
+    dna -->|context / mcp| coder
+    dna -->|context / mcp| tester
+    dna -->|context / mcp| reviewer
+
+    coder ==>|produces| impl
+    tester ==>|validates| pr
+    reviewer ==>|approves| pr
 
     style architect fill:#10b981,stroke:#059669,color:#fff
     style analyst fill:#10b981,stroke:#059669,color:#fff
@@ -123,6 +121,8 @@ flowchart LR
     style go fill:#6b7280,stroke:#4b5563,color:#fff
     style py fill:#6b7280,stroke:#4b5563,color:#fff
     style any fill:#6b7280,stroke:#4b5563,color:#fff
+
+    style pr fill:#22c55e,stroke:#16a34a,color:#fff
 ```
 
 ### Agentic Template
