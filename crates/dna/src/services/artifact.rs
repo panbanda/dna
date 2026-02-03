@@ -1,6 +1,6 @@
 use super::types::{
     estimate_tokens, get_model_info, slugify_kind, Artifact, ContentFormat, ReindexTarget,
-    SearchFilters, SearchResult,
+    SearchFilters,
 };
 use super::ServiceError;
 use crate::db::Database;
@@ -307,6 +307,7 @@ impl ArtifactService {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::services::SearchResult;
     use std::sync::Mutex;
 
     /// A simple mock embedding provider for tests
