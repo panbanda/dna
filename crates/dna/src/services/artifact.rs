@@ -26,7 +26,32 @@ impl ArtifactService {
         format: ContentFormat,
         name: Option<String>,
         metadata: HashMap<String, String>,
+        context: Option<String>,
     ) -> Result<Artifact> {
+        // Validate content and context length against model limits
+        let model_info = get_model_info(self.embedding.model_id());
+        let content_tokens = estimate_tokens(&content);
+        if content_tokens > model_info.max_tokens {
+            return Err(anyhow::anyhow!(
+                "Content exceeds maximum of {} tokens (estimated {}). \
+                 Reduce content length or configure a model with a larger context window.",
+                model_info.max_tokens,
+                content_tokens
+            ));
+        }
+
+        if let Some(ctx) = &context {
+            let context_tokens = estimate_tokens(ctx);
+            if context_tokens > model_info.max_tokens {
+                return Err(anyhow::anyhow!(
+                    "Context exceeds maximum of {} tokens (estimated {}). \
+                     Reduce context length or configure a model with a larger context window.",
+                    model_info.max_tokens,
+                    context_tokens
+                ));
+            }
+        }
+
         // Create artifact with embedding model info
         let mut artifact = Artifact::new(
             slugify_kind(&kind),
@@ -37,13 +62,24 @@ impl ArtifactService {
             self.embedding.model_id().to_string(),
         );
 
-        // Generate embedding
+        // Generate content embedding
         let embedding = self
             .embedding
             .embed(&content)
             .await
             .context("Failed to generate embedding")?;
         artifact.embedding = Some(embedding);
+
+        // Set context and generate context embedding if provided
+        artifact.context = context.clone();
+        if let Some(ctx) = &context {
+            let context_embedding = self
+                .embedding
+                .embed(ctx)
+                .await
+                .context("Failed to generate context embedding")?;
+            artifact.context_embedding = Some(context_embedding);
+        }
 
         // Store in database
         self.db
@@ -67,6 +103,7 @@ impl ArtifactService {
         name: Option<String>,
         kind: Option<String>,
         metadata: Option<HashMap<String, String>>,
+        context: Option<String>,
     ) -> Result<Artifact, ServiceError> {
         // Get existing artifact
         let mut artifact = self
@@ -92,12 +129,53 @@ impl ArtifactService {
         }
 
         if let Some(new_metadata) = metadata {
-            artifact.metadata.extend(new_metadata);
+            for (key, value) in new_metadata {
+                if value.is_empty() {
+                    artifact.metadata.remove(&key);
+                } else {
+                    artifact.metadata.insert(key, value);
+                }
+            }
+        }
+
+        // Update context and regenerate context embedding if changed
+        let mut needs_context_reembed = false;
+        if let Some(new_context) = context {
+            if artifact.context.as_ref() != Some(&new_context) {
+                artifact.context = Some(new_context);
+                needs_context_reembed = true;
+            }
         }
 
         artifact.updated_at = chrono::Utc::now();
 
-        // Re-embed if content changed
+        // Validate content and context length against model limits before re-embedding
+        let model_info = get_model_info(self.embedding.model_id());
+        if needs_reembed {
+            let content_tokens = estimate_tokens(&artifact.content);
+            if content_tokens > model_info.max_tokens {
+                return Err(ServiceError::Validation(format!(
+                    "Content exceeds maximum of {} tokens (estimated {}). \
+                     Reduce content length or configure a model with a larger context window.",
+                    model_info.max_tokens, content_tokens
+                )));
+            }
+        }
+
+        if needs_context_reembed {
+            if let Some(ctx) = &artifact.context {
+                let context_tokens = estimate_tokens(ctx);
+                if context_tokens > model_info.max_tokens {
+                    return Err(ServiceError::Validation(format!(
+                        "Context exceeds maximum of {} tokens (estimated {}). \
+                         Reduce context length or configure a model with a larger context window.",
+                        model_info.max_tokens, context_tokens
+                    )));
+                }
+            }
+        }
+
+        // Re-embed content if changed
         if needs_reembed {
             let embedding = self
                 .embedding
@@ -106,6 +184,18 @@ impl ArtifactService {
                 .context("Failed to generate embedding")?;
             artifact.embedding = Some(embedding);
             artifact.embedding_model = self.embedding.model_id().to_string();
+        }
+
+        // Re-embed context if changed
+        if needs_context_reembed {
+            if let Some(ctx) = &artifact.context {
+                let context_embedding = self
+                    .embedding
+                    .embed(ctx)
+                    .await
+                    .context("Failed to generate context embedding")?;
+                artifact.context_embedding = Some(context_embedding);
+            }
         }
 
         // Update in database
@@ -270,6 +360,7 @@ mod tests {
                 ContentFormat::Markdown,
                 Some("test-name".to_string()),
                 HashMap::new(),
+                None,
             )
             .await
             .unwrap();
@@ -297,6 +388,7 @@ mod tests {
                 ContentFormat::Markdown,
                 None,
                 HashMap::new(),
+                None,
             )
             .await
             .unwrap();
@@ -397,6 +489,7 @@ mod tests {
                 None,
                 None,
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -424,7 +517,14 @@ mod tests {
         let service = ArtifactService::new(db, embedding);
 
         let updated = service
-            .update(&artifact_id, None, Some("new-name".to_string()), None, None)
+            .update(
+                &artifact_id,
+                None,
+                Some("new-name".to_string()),
+                None,
+                None,
+                None,
+            )
             .await
             .unwrap();
 
@@ -450,7 +550,14 @@ mod tests {
         let service = ArtifactService::new(db, embedding);
 
         let updated = service
-            .update(&artifact_id, None, None, Some("contract".to_string()), None)
+            .update(
+                &artifact_id,
+                None,
+                None,
+                Some("contract".to_string()),
+                None,
+                None,
+            )
             .await
             .unwrap();
 
@@ -480,6 +587,7 @@ mod tests {
                 None,
                 Some("My Custom Kind".to_string()),
                 None,
+                None,
             )
             .await
             .unwrap();
@@ -494,7 +602,14 @@ mod tests {
         let service = ArtifactService::new(db, embedding);
 
         let result = service
-            .update("nonexistent", Some("content".to_string()), None, None, None)
+            .update(
+                "nonexistent",
+                Some("content".to_string()),
+                None,
+                None,
+                None,
+                None,
+            )
             .await;
 
         assert!(result.is_err());
@@ -578,11 +693,147 @@ mod tests {
         new_metadata.insert("key2".to_string(), "value2".to_string());
 
         let updated = service
-            .update(&artifact_id, None, None, None, Some(new_metadata))
+            .update(&artifact_id, None, None, None, Some(new_metadata), None)
             .await
             .unwrap();
 
         assert_eq!(updated.metadata.get("key1"), Some(&"value1".to_string()));
         assert_eq!(updated.metadata.get("key2"), Some(&"value2".to_string()));
+    }
+
+    #[tokio::test]
+    async fn update_removes_label_with_empty_value() {
+        let mut initial_metadata = HashMap::new();
+        initial_metadata.insert("env".to_string(), "production".to_string());
+        initial_metadata.insert("team".to_string(), "platform".to_string());
+
+        let artifact = Artifact::new(
+            "intent".to_string(),
+            "content".to_string(),
+            ContentFormat::Markdown,
+            None,
+            initial_metadata,
+            "model".to_string(),
+        );
+        let artifact_id = artifact.id.clone();
+
+        let db = Arc::new(TestDatabase::with_artifact(artifact));
+        let embedding = Arc::new(TestEmbedding::new("test-model", vec![]));
+        let service = ArtifactService::new(db, embedding);
+
+        // Update with empty value for "env" label - should remove it
+        let mut remove_label = HashMap::new();
+        remove_label.insert("env".to_string(), "".to_string());
+
+        let updated = service
+            .update(&artifact_id, None, None, None, Some(remove_label), None)
+            .await
+            .unwrap();
+
+        // Label "env" should be removed, not set to empty string
+        assert!(
+            !updated.metadata.contains_key("env"),
+            "Label 'env' should be removed when updated with empty value"
+        );
+        // Label "team" should remain unchanged
+        assert_eq!(
+            updated.metadata.get("team"),
+            Some(&"platform".to_string()),
+            "Label 'team' should remain unchanged"
+        );
+    }
+
+    #[tokio::test]
+    async fn add_rejects_content_exceeding_token_limit() {
+        let db = Arc::new(TestDatabase::new());
+        // Using default BGE model with 512 token limit
+        let embedding = Arc::new(TestEmbedding::new("BAAI/bge-small-en-v1.5", vec![0.1]));
+        let service = ArtifactService::new(db, embedding);
+
+        // Create content that exceeds 512 tokens (~500 words at 0.75 words/token)
+        let long_content = "word ".repeat(500);
+
+        let result = service
+            .add(
+                "intent".to_string(),
+                long_content,
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+                None,
+            )
+            .await;
+
+        assert!(
+            result.is_err(),
+            "Should reject content exceeding token limit"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("token") || err_msg.contains("limit"),
+            "Error should mention token limit: {}",
+            err_msg
+        );
+    }
+
+    #[tokio::test]
+    async fn add_rejects_context_exceeding_token_limit() {
+        let db = Arc::new(TestDatabase::new());
+        let embedding = Arc::new(TestEmbedding::new("BAAI/bge-small-en-v1.5", vec![0.1]));
+        let service = ArtifactService::new(db, embedding);
+
+        let short_content = "Valid short content".to_string();
+        // Context also gets embedded, so should also be validated
+        let long_context = "word ".repeat(500);
+
+        let result = service
+            .add(
+                "intent".to_string(),
+                short_content,
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+                Some(long_context),
+            )
+            .await;
+
+        assert!(
+            result.is_err(),
+            "Should reject context exceeding token limit"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("token") || err_msg.contains("context") || err_msg.contains("limit"),
+            "Error should mention token/context limit: {}",
+            err_msg
+        );
+    }
+
+    #[tokio::test]
+    async fn add_accepts_content_within_token_limit() {
+        let db = Arc::new(TestDatabase::new());
+        // Using OpenAI model with 8191 token limit
+        let embedding = Arc::new(TestEmbedding::new("text-embedding-3-small", vec![0.1]));
+        let service = ArtifactService::new(db, embedding);
+
+        // 500 words is well within 8191 tokens
+        let content = "word ".repeat(500);
+
+        let result = service
+            .add(
+                "intent".to_string(),
+                content,
+                ContentFormat::Markdown,
+                None,
+                HashMap::new(),
+                None,
+            )
+            .await;
+
+        assert!(
+            result.is_ok(),
+            "Should accept content within token limit: {:?}",
+            result.err()
+        );
     }
 }

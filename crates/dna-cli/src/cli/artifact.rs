@@ -6,23 +6,30 @@ use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct AddArgs {
-    /// Artifact kind (e.g. intent, contract, algorithm)
+    /// Artifact kind (must be registered via 'dna kind add')
     pub kind: String,
 
-    /// Artifact content
+    /// Artifact content - the full text to be embedded and stored
     pub content: String,
 
-    /// Optional name slug
+    /// Optional name slug for human-readable identification
     #[arg(long)]
     pub name: Option<String>,
 
-    /// Content format
+    /// Content format [default: markdown] [possible values: markdown, yaml, json, openapi, text]
     #[arg(long, default_value = "markdown")]
     pub format: String,
 
-    /// Metadata key=value pairs
-    #[arg(long = "meta")]
-    pub metadata: Vec<String>,
+    /// Label as key=value pair for filtering and organization.
+    /// Can be repeated. Example: --label domain=auth --label priority=high
+    #[arg(long = "label", short = 'l')]
+    pub labels: Vec<String>,
+
+    /// Additional context for improved semantic retrieval.
+    /// Describe relationships, domain concepts, or purpose.
+    /// Gets its own embedding for context-aware search.
+    #[arg(long, short = 'c')]
+    pub context: Option<String>,
 }
 
 #[derive(Args)]
@@ -33,24 +40,30 @@ pub struct GetArgs {
 
 #[derive(Args)]
 pub struct UpdateArgs {
-    /// Artifact ID
+    /// Artifact ID to update
     pub id: String,
 
-    /// New content
+    /// New content (replaces existing, triggers re-embedding)
     #[arg(long)]
     pub content: Option<String>,
 
-    /// New name
+    /// New name slug
     #[arg(long)]
     pub name: Option<String>,
 
-    /// New kind
+    /// Change artifact kind (must be registered)
     #[arg(long)]
     pub kind: Option<String>,
 
-    /// Metadata key=value pairs to add/update
-    #[arg(long = "meta")]
-    pub metadata: Vec<String>,
+    /// Add or update label. Use empty value to remove: --label key=
+    /// Can be repeated. Example: --label status=done --label draft=
+    #[arg(long = "label", short = 'l')]
+    pub labels: Vec<String>,
+
+    /// New context (replaces existing, triggers re-embedding).
+    /// Use empty string to remove: --context ""
+    #[arg(long, short = 'c')]
+    pub context: Option<String>,
 }
 
 #[derive(Args)]
@@ -80,10 +93,17 @@ async fn create_service() -> Result<ArtifactService> {
 pub async fn execute_add(args: AddArgs) -> Result<()> {
     let service = create_service().await?;
     let format: ContentFormat = args.format.parse()?;
-    let metadata = parse_metadata(&args.metadata)?;
+    let labels = parse_metadata(&args.labels)?;
 
     let artifact = service
-        .add(args.kind, args.content, format, args.name, metadata)
+        .add(
+            args.kind,
+            args.content,
+            format,
+            args.name,
+            labels,
+            args.context,
+        )
         .await?;
     println!("Added artifact: {}", artifact.id);
     println!("{}", serde_json::to_string_pretty(&artifact)?);
@@ -103,14 +123,21 @@ pub async fn execute_get(args: GetArgs) -> Result<()> {
 
 pub async fn execute_update(args: UpdateArgs) -> Result<()> {
     let service = create_service().await?;
-    let metadata = if args.metadata.is_empty() {
+    let labels = if args.labels.is_empty() {
         None
     } else {
-        Some(parse_metadata(&args.metadata)?)
+        Some(parse_metadata(&args.labels)?)
     };
 
     let artifact = service
-        .update(&args.id, args.content, args.name, args.kind, metadata)
+        .update(
+            &args.id,
+            args.content,
+            args.name,
+            args.kind,
+            labels,
+            args.context,
+        )
         .await?;
     println!("Updated artifact: {}", artifact.id);
     println!("{}", serde_json::to_string_pretty(&artifact)?);

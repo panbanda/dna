@@ -19,6 +19,9 @@ pub enum ServiceError {
     #[error("not found: {0}")]
     NotFound(String),
 
+    #[error("validation error: {0}")]
+    Validation(String),
+
     #[error("{0}")]
     Internal(#[from] anyhow::Error),
 }

@@ -56,11 +56,102 @@ pub struct ChangesArgs {
     before: Option<String>,
 }
 
+/// Arguments for the reindex command.
+///
+/// The reindex command regenerates embeddings for artifacts in the database.
+/// Use this when the embedding model changes, artifacts become stale, or you
+/// need to rebuild the vector index.
+///
+/// # Embedding Types
+///
+/// - **Content embeddings**: Derived from the artifact's content field. Used for
+///   semantic search queries like "find authentication code".
+/// - **Context embeddings**: Derived from metadata, relationships, and structural
+///   information. Used for contextual queries like "find artifacts related to X".
+///
+/// # Examples
+///
+/// Reindex everything (both content and context embeddings):
+/// ```sh
+/// dna reindex --all
+/// ```
+///
+/// Reindex only content embeddings for faster semantic search:
+/// ```sh
+/// dna reindex --content
+/// ```
+///
+/// Reindex a specific artifact by ID:
+/// ```sh
+/// dna reindex --id abc123
+/// ```
+///
+/// Reindex all "spec" artifacts modified in the last week:
+/// ```sh
+/// dna reindex --content --kind spec --since 2024-01-15
+/// ```
+///
+/// Preview what would be reindexed without making changes:
+/// ```sh
+/// dna reindex --all --dry-run
+/// ```
+///
+/// Force reindex even if the embedding model hasn't changed:
+/// ```sh
+/// dna reindex --all --force
+/// ```
 #[derive(Args)]
 pub struct ReindexArgs {
-    /// Force reindex even if model hasn't changed
+    /// Reindex all embeddings (content + context).
+    /// Use this for a full rebuild after model changes or database corruption.
     #[arg(long)]
-    force: bool,
+    pub all: bool,
+
+    /// Reindex content embeddings only.
+    /// Content embeddings are derived from the artifact's main content field
+    /// and are used for semantic search. Faster than --all when you only need
+    /// to update search functionality.
+    #[arg(long)]
+    pub content: bool,
+
+    /// Reindex context embeddings only.
+    /// Context embeddings capture metadata, relationships, and structural info.
+    /// Use this when artifact relationships or metadata have changed but content
+    /// remains the same.
+    #[arg(long)]
+    pub context: bool,
+
+    /// Only reindex artifacts of this kind (e.g., "spec", "code", "doc").
+    /// Useful for targeted reindexing when only certain artifact types need updates.
+    #[arg(long)]
+    pub kind: Option<String>,
+
+    /// Only reindex artifacts matching this label (can be repeated).
+    /// Labels are key=value pairs. Multiple labels are AND-ed together.
+    /// Example: --label team=platform --label priority=high
+    #[arg(long = "label", short = 'l')]
+    pub labels: Vec<String>,
+
+    /// Reindex a specific artifact by its ID.
+    /// Use this for surgical updates to individual artifacts.
+    #[arg(long)]
+    pub id: Option<String>,
+
+    /// Only reindex artifacts modified after this date (YYYY-MM-DD).
+    /// Useful for incremental reindexing after bulk imports or migrations.
+    #[arg(long)]
+    pub since: Option<String>,
+
+    /// Show what would be reindexed without actually doing it.
+    /// Outputs the list of artifacts that match the filters.
+    #[arg(long)]
+    pub dry_run: bool,
+
+    /// Reindex even if the embedding model hasn't changed.
+    /// By default, reindex skips artifacts whose embeddings are already
+    /// up-to-date with the current model. Use --force to override this.
+    #[arg(long)]
+    pub force: bool,
 }
 
 pub async fn execute_search(args: SearchArgs) -> Result<()> {
@@ -204,6 +295,25 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 }
 
 pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
+    // Show help if no action flags are provided
+    if !args.all && !args.content && !args.context && args.id.is_none() {
+        println!("Specify what to reindex:");
+        println!("  --all        Reindex all embeddings (content + context)");
+        println!("  --content    Reindex content embeddings only");
+        println!("  --context    Reindex context embeddings only");
+        println!("  --id <ID>    Reindex specific artifact");
+        println!();
+        println!("Optional filters:");
+        println!("  --kind <KIND>        Only artifacts of this kind");
+        println!("  --label <KEY=VALUE>  Only artifacts with this label");
+        println!("  --since <DATE>       Only artifacts modified after date");
+        println!();
+        println!("Options:");
+        println!("  --dry-run    Show what would be reindexed");
+        println!("  --force      Reindex even if model unchanged");
+        return Ok(());
+    }
+
     let project_root = PathBuf::from(".");
     let config_service = ConfigService::new(&project_root);
 
@@ -232,6 +342,9 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
             inconsistent.len()
         );
     }
+
+    // TODO: Implement filtering logic for kind, labels, id, since, dry_run
+    // TODO: Implement separate content vs context reindexing
 
     println!("Reindexing artifacts...");
     let count = service.reindex().await?;

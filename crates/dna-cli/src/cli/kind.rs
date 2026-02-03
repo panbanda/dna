@@ -29,9 +29,9 @@ pub struct KindAddArgs {
     /// Kind name (will be slugified)
     pub name: String,
 
-    /// Description of this artifact kind
-    #[arg(long)]
-    pub description: Option<String>,
+    /// Description of what artifacts of this kind contain.
+    /// Helps LLMs understand when to use this kind.
+    pub description: String,
 }
 
 #[derive(Args)]
@@ -70,9 +70,7 @@ async fn execute_add(args: KindAddArgs) -> Result<()> {
     }
 
     let slug = slugify_kind(&args.name);
-    let description = args
-        .description
-        .unwrap_or_else(|| format!("{} artifacts", args.name));
+    let description = args.description;
 
     let added = match config_service.add_kind(&slug, &description) {
         Ok(added) => added,

@@ -212,6 +212,7 @@ impl DnaToolHandler {
                 request.format,
                 request.name,
                 request.metadata,
+                None, // TODO: Add context support to MCP AddRequest
             )
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
@@ -237,6 +238,7 @@ impl DnaToolHandler {
                 request.name,
                 request.kind,
                 request.metadata,
+                None, // TODO: Add context support to MCP UpdateRequest
             )
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
@@ -295,6 +297,7 @@ impl DnaToolHandler {
                 request.format,
                 request.name,
                 request.metadata,
+                None, // TODO: Add context support to MCP KindAddRequest
             )
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
