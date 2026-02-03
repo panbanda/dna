@@ -1,4 +1,7 @@
-use super::types::*;
+use super::types::{
+    estimate_tokens, get_model_info, slugify_kind, Artifact, ContentFormat, ReindexTarget,
+    SearchFilters,
+};
 use super::ServiceError;
 use crate::db::Database;
 use crate::embedding::EmbeddingProvider;
@@ -225,25 +228,79 @@ impl ArtifactService {
 
     /// Reindex all artifacts with current embedding model
     pub async fn reindex(&self) -> Result<usize> {
-        let artifacts = self.list(SearchFilters::default()).await?;
+        self.reindex_filtered(SearchFilters::default(), ReindexTarget::Both)
+            .await
+    }
+
+    /// Reindex artifacts matching filters with specified target embeddings.
+    ///
+    /// Returns the number of artifacts reindexed.
+    pub async fn reindex_filtered(
+        &self,
+        filters: SearchFilters,
+        target: ReindexTarget,
+    ) -> Result<usize> {
+        let artifacts = self.list(filters).await?;
         let total = artifacts.len();
 
         for mut artifact in artifacts {
+            self.reindex_artifact_embeddings(&mut artifact, target)
+                .await?;
+        }
+
+        Ok(total)
+    }
+
+    /// Reindex a single artifact by ID.
+    ///
+    /// Returns the updated artifact, or None if not found.
+    pub async fn reindex_by_id(&self, id: &str, target: ReindexTarget) -> Result<Option<Artifact>> {
+        let Some(mut artifact) = self.get(id).await? else {
+            return Ok(None);
+        };
+
+        self.reindex_artifact_embeddings(&mut artifact, target)
+            .await?;
+
+        Ok(Some(artifact))
+    }
+
+    /// Regenerate embeddings for an artifact and persist changes.
+    async fn reindex_artifact_embeddings(
+        &self,
+        artifact: &mut Artifact,
+        target: ReindexTarget,
+    ) -> Result<()> {
+        let reindex_content = matches!(target, ReindexTarget::Content | ReindexTarget::Both);
+        let reindex_context = matches!(target, ReindexTarget::Context | ReindexTarget::Both);
+
+        if reindex_content {
             let embedding = self
                 .embedding
                 .embed(&artifact.content)
                 .await
-                .context("Failed to generate embedding during reindex")?;
+                .context("Failed to generate content embedding during reindex")?;
             artifact.embedding = Some(embedding);
             artifact.embedding_model = self.embedding.model_id().to_string();
-
-            self.db
-                .update(&artifact)
-                .await
-                .context("Failed to update artifact during reindex")?;
         }
 
-        Ok(total)
+        if reindex_context {
+            if let Some(ctx) = &artifact.context {
+                let context_embedding = self
+                    .embedding
+                    .embed(ctx)
+                    .await
+                    .context("Failed to generate context embedding during reindex")?;
+                artifact.context_embedding = Some(context_embedding);
+            }
+        }
+
+        self.db
+            .update(artifact)
+            .await
+            .context("Failed to update artifact during reindex")?;
+
+        Ok(())
     }
 }
 

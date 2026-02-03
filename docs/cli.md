@@ -279,7 +279,7 @@ Added artifact: abc123defg
 **Errors:**
 
 ```
-Error: Content exceeds maximum of 512 tokens (got 847).
+Error: Content exceeds maximum of 512 tokens (estimated 847).
 Reduce content length or configure a model with a larger context window.
 ```
 
@@ -601,16 +601,22 @@ name = "my-custom-model"
 max_tokens = 4096    # Your model's actual limit
 ```
 
+> **Note:** Token counts are estimated using a heuristic of ~1.3 tokens per word.
+> Actual limits depend on your model's tokenizer. The estimate is conservative to
+> avoid exceeding limits.
+
 ### Overflow Behavior
 
-When content or context exceeds the model's token limit, DNA returns an error:
+When content or context exceeds the model's estimated token limit, DNA returns an error:
 
 ```
-Error: Content exceeds maximum of 512 tokens (got 847).
+Error: Content exceeds maximum of 512 tokens (estimated 847).
 Reduce content length or configure a model with a larger context window.
 ```
 
 This is intentional. Truncated embeddings lose semantic information and degrade search quality. If your content is consistently long, use a model with a larger context window.
+
+The token counts shown in error messages are estimates. Your actual mileage may vary depending on the tokenizer used by your embedding model.
 
 ---
 

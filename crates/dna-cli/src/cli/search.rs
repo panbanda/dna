@@ -1,7 +1,8 @@
 use super::parse_metadata;
 use anyhow::Result;
+use chrono::{NaiveDate, TimeZone, Utc};
 use clap::Args;
-use dna::services::{ArtifactService, ConfigService, SearchFilters, SearchService};
+use dna::services::{ArtifactService, ConfigService, ReindexTarget, SearchFilters, SearchService};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -297,18 +298,23 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
 pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     // Show help if no action flags are provided
     if !args.all && !args.content && !args.context && args.id.is_none() {
-        println!("Specify what to reindex:");
+        println!("Reindex embeddings for artifacts in the database.");
+        println!();
+        println!("USAGE:");
+        println!("  dna reindex [OPTIONS]");
+        println!();
+        println!("WHAT TO REINDEX:");
         println!("  --all        Reindex all embeddings (content + context)");
         println!("  --content    Reindex content embeddings only");
         println!("  --context    Reindex context embeddings only");
         println!("  --id <ID>    Reindex specific artifact");
         println!();
-        println!("Optional filters:");
+        println!("FILTERS:");
         println!("  --kind <KIND>        Only artifacts of this kind");
         println!("  --label <KEY=VALUE>  Only artifacts with this label");
-        println!("  --since <DATE>       Only artifacts modified after date");
+        println!("  --since <DATE>       Only artifacts modified after date (YYYY-MM-DD)");
         println!();
-        println!("Options:");
+        println!("OPTIONS:");
         println!("  --dry-run    Show what would be reindexed");
         println!("  --force      Reindex even if model unchanged");
         return Ok(());
@@ -331,7 +337,8 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     let service = ArtifactService::new(db.clone(), embedding.clone());
     let search_service = SearchService::new(db, embedding);
 
-    if !args.force {
+    // Check staleness unless --force is set
+    if !args.force && !args.dry_run {
         let inconsistent = search_service.check_embedding_consistency().await?;
         if inconsistent.is_empty() {
             println!("All artifacts are indexed with the current model.");
@@ -343,12 +350,149 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
         );
     }
 
-    // TODO: Implement filtering logic for kind, labels, id, since, dry_run
-    // TODO: Implement separate content vs context reindexing
+    // Determine the reindex target
+    let target = if args.content && args.context {
+        ReindexTarget::Both
+    } else if args.content {
+        ReindexTarget::Content
+    } else if args.context {
+        ReindexTarget::Context
+    } else {
+        // --all or --id without specifying content/context defaults to both
+        ReindexTarget::Both
+    };
 
-    println!("Reindexing artifacts...");
-    let count = service.reindex().await?;
-    println!("Reindexed {} artifacts.", count);
+    let target_desc = match target {
+        ReindexTarget::Content => "content embeddings",
+        ReindexTarget::Context => "context embeddings",
+        ReindexTarget::Both => "all embeddings",
+    };
+
+    // Handle --id flag: reindex a specific artifact
+    if let Some(id) = &args.id {
+        if args.dry_run {
+            if let Some(artifact) = service.get(id).await? {
+                println!("Would reindex {} for artifact:", target_desc);
+                println!(
+                    "  {} - {} ({})",
+                    artifact.id, artifact.kind, artifact.format
+                );
+            } else {
+                println!("Artifact '{}' not found.", id);
+            }
+            return Ok(());
+        }
+
+        println!("Reindexing {} for artifact '{}'...", target_desc, id);
+        match service.reindex_by_id(id, target).await? {
+            Some(artifact) => {
+                println!(
+                    "Reindexed artifact: {} - {} ({})",
+                    artifact.id, artifact.kind, artifact.format
+                );
+            },
+            None => {
+                return Err(anyhow::anyhow!("Artifact '{}' not found.", id));
+            },
+        }
+        return Ok(());
+    }
+
+    // Build filters from args
+    let metadata = parse_metadata(&args.labels)?;
+
+    let after = args
+        .since
+        .as_ref()
+        .map(|s| {
+            NaiveDate::parse_from_str(s, "%Y-%m-%d")
+                .map_err(|e| {
+                    anyhow::anyhow!(
+                        "Invalid date format for --since '{}': {}. Use YYYY-MM-DD.",
+                        s,
+                        e
+                    )
+                })
+                .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
+        })
+        .transpose()?;
+
+    let filters = SearchFilters {
+        kind: args.kind.clone(),
+        metadata,
+        after,
+        before: None,
+        limit: None,
+    };
+
+    // Get matching artifacts
+    let artifacts = service.list(filters).await?;
+
+    if artifacts.is_empty() {
+        println!("No artifacts match the specified filters.");
+        return Ok(());
+    }
+
+    // Dry-run: just print what would be reindexed
+    if args.dry_run {
+        println!(
+            "Would reindex {} for {} artifact(s):",
+            target_desc,
+            artifacts.len()
+        );
+        for artifact in &artifacts {
+            let has_context = if artifact.context.is_some() {
+                " [has context]"
+            } else {
+                ""
+            };
+            println!(
+                "  {} - {} ({}){}",
+                artifact.id, artifact.kind, artifact.format, has_context
+            );
+        }
+        return Ok(());
+    }
+
+    // Perform the reindex
+    let filter_desc = build_filter_description(&args);
+    println!(
+        "Reindexing {} for {} artifact(s){}...",
+        target_desc,
+        artifacts.len(),
+        filter_desc
+    );
+
+    // Reindex each artifact
+    let mut count = 0;
+    for artifact in artifacts {
+        service.reindex_by_id(&artifact.id, target).await?;
+        count += 1;
+    }
+
+    println!("Reindexed {} artifact(s).", count);
 
     Ok(())
+}
+
+fn build_filter_description(args: &ReindexArgs) -> String {
+    let mut parts = Vec::new();
+
+    if let Some(kind) = &args.kind {
+        parts.push(format!("kind={}", kind));
+    }
+
+    if !args.labels.is_empty() {
+        parts.push(format!("labels=[{}]", args.labels.join(", ")));
+    }
+
+    if let Some(since) = &args.since {
+        parts.push(format!("since={}", since));
+    }
+
+    if parts.is_empty() {
+        String::new()
+    } else {
+        format!(" ({})", parts.join(", "))
+    }
 }

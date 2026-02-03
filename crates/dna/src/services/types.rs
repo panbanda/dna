@@ -293,6 +293,17 @@ pub struct SearchFilters {
     pub limit: Option<usize>,
 }
 
+/// Specifies which embeddings to regenerate during reindexing.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReindexTarget {
+    /// Regenerate content embeddings only.
+    Content,
+    /// Regenerate context embeddings only.
+    Context,
+    /// Regenerate both content and context embeddings.
+    Both,
+}
+
 /// Search result with similarity score
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SearchResult {
