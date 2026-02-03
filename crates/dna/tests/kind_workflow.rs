@@ -1,5 +1,7 @@
 use dna::embedding::EmbeddingProvider;
-use dna::services::{ArtifactService, ConfigService, ContentFormat, KindService, SearchFilters};
+use dna::services::{
+    get_template, ArtifactService, ConfigService, ContentFormat, KindService, SearchFilters,
+};
 use dna::testing::{TestDatabase, TestEmbedding};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -8,48 +10,57 @@ use tempfile::TempDir;
 // -- Tests --
 
 #[test]
-fn init_intent_flow_registers_seven_kinds() {
+fn init_intent_template_registers_eleven_kinds() {
     let temp_dir = TempDir::new().unwrap();
     let svc = ConfigService::new(temp_dir.path());
+    let template = get_template("intent").unwrap();
 
-    let config = svc.init_intent_flow().unwrap();
+    let config = svc.init_from_template(template).unwrap();
 
-    assert_eq!(config.kinds.definitions.len(), 7);
+    assert_eq!(config.kinds.definitions.len(), 11);
     for slug in &[
         "intent",
-        "invariant",
         "contract",
         "algorithm",
         "evaluation",
         "pace",
         "monitor",
+        "glossary",
+        "integration",
+        "reporting",
+        "compliance",
+        "constraint",
     ] {
         assert!(config.kinds.has(slug), "Missing kind: {}", slug);
     }
 }
 
 #[test]
-fn init_intent_flow_persists_and_reloads() {
+fn init_intent_template_persists_and_reloads() {
     let temp_dir = TempDir::new().unwrap();
     let svc = ConfigService::new(temp_dir.path());
-    svc.init_intent_flow().unwrap();
+    let template = get_template("intent").unwrap();
+    svc.init_from_template(template).unwrap();
 
     let reloaded = svc.load().unwrap();
-    assert_eq!(reloaded.kinds.definitions.len(), 7);
+    assert_eq!(reloaded.kinds.definitions.len(), 11);
     assert!(reloaded.kinds.has("evaluation"));
-    assert_eq!(
-        reloaded.kinds.get("evaluation").unwrap().description,
-        "Success criteria, thresholds, and verification mechanisms"
-    );
+    assert!(reloaded
+        .kinds
+        .get("evaluation")
+        .unwrap()
+        .description
+        .contains("invariant"));
 }
 
 #[test]
-fn init_intent_flow_idempotent() {
+fn init_template_idempotent() {
     let temp_dir = TempDir::new().unwrap();
     let svc = ConfigService::new(temp_dir.path());
-    svc.init_intent_flow().unwrap();
-    let config = svc.init_intent_flow().unwrap();
-    assert_eq!(config.kinds.definitions.len(), 7);
+    let template = get_template("intent").unwrap();
+    svc.init_from_template(template).unwrap();
+    let config = svc.init_from_template(template).unwrap();
+    assert_eq!(config.kinds.definitions.len(), 11);
 }
 
 #[test]
@@ -153,13 +164,14 @@ async fn kind_service_search_scoped() {
 }
 
 #[tokio::test]
-async fn full_intent_flow_workflow() {
+async fn full_intent_template_workflow() {
     let temp_dir = TempDir::new().unwrap();
     let config_svc = ConfigService::new(temp_dir.path());
+    let template = get_template("intent").unwrap();
 
-    // 1. Init with intent-flow
-    let config = config_svc.init_intent_flow().unwrap();
-    assert_eq!(config.kinds.definitions.len(), 7);
+    // 1. Init with intent template
+    let config = config_svc.init_from_template(template).unwrap();
+    assert_eq!(config.kinds.definitions.len(), 11);
 
     let db = Arc::new(TestDatabase::new());
     let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
@@ -178,9 +190,9 @@ async fn full_intent_flow_workflow() {
         .await
         .unwrap();
 
-    let invariant = artifact_svc
+    let constraint = artifact_svc
         .add(
-            "invariant".into(),
+            "constraint".into(),
             "Passwords hashed with bcrypt".into(),
             ContentFormat::Markdown,
             Some("password-hash".into()),
@@ -203,7 +215,7 @@ async fn full_intent_flow_workflow() {
         .unwrap();
 
     assert_eq!(intent.kind, "intent");
-    assert_eq!(invariant.kind, "invariant");
+    assert_eq!(constraint.kind, "constraint");
     assert_eq!(evaluation.kind, "evaluation");
     assert!(intent.embedding.is_some());
 
@@ -213,7 +225,7 @@ async fn full_intent_flow_workflow() {
 
     // 4. Add custom kind
     config_svc.add_kind("deployment", "Deploy rules").unwrap();
-    assert_eq!(config_svc.load().unwrap().kinds.definitions.len(), 8);
+    assert_eq!(config_svc.load().unwrap().kinds.definitions.len(), 12);
 
     artifact_svc
         .add(
@@ -297,4 +309,18 @@ async fn update_artifact_removes_label_with_empty_value() {
         Some(&"platform".to_string()),
         "Other labels should remain unchanged"
     );
+}
+
+#[test]
+fn ai_safety_template_registers_five_kinds() {
+    let temp_dir = TempDir::new().unwrap();
+    let svc = ConfigService::new(temp_dir.path());
+    let template = get_template("ai-safety").unwrap();
+
+    let config = svc.init_from_template(template).unwrap();
+
+    assert_eq!(config.kinds.definitions.len(), 5);
+    for slug in &["behavior", "boundary", "threat", "eval", "governance"] {
+        assert!(config.kinds.has(slug), "Missing kind: {}", slug);
+    }
 }

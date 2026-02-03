@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Args;
-use dna::services::ConfigService;
+use dna::services::{get_template, list_templates, ConfigService, Template};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -9,16 +9,39 @@ pub struct InitArgs {
     #[arg(long)]
     model: Option<String>,
 
-    /// Initialize with intent-flow artifact kinds (intent, invariant, contract, algorithm, evaluation, pace, monitor)
+    /// Initialize with a predefined template. Use --list-templates to see available options.
+    #[arg(long, value_name = "NAME")]
+    template: Option<String>,
+
+    /// List available templates and exit
     #[arg(long)]
-    intent_flow: bool,
+    list_templates: bool,
 
     /// Project root directory
     #[arg(default_value = ".")]
     path: PathBuf,
 }
 
+fn print_template_info(template: &Template) {
+    println!("  {} - {}", template.name, template.description);
+    println!("    Kinds:");
+    for kind in template.kinds {
+        println!("      {}: {}", kind.slug, kind.description);
+    }
+}
+
 pub async fn execute(args: InitArgs) -> Result<()> {
+    // Handle --list-templates
+    if args.list_templates {
+        println!("Available templates:");
+        for name in list_templates() {
+            if let Some(template) = get_template(name) {
+                print_template_info(template);
+            }
+        }
+        return Ok(());
+    }
+
     let project_root = args.path;
 
     // Create .dna directory
@@ -44,10 +67,19 @@ pub async fn execute(args: InitArgs) -> Result<()> {
         config_service.init()?
     };
 
-    // Apply intent-flow kinds if requested
-    let config = if args.intent_flow {
-        let updated = config_service.init_intent_flow()?;
-        println!("  Intent-flow kinds registered:");
+    // Apply template if requested
+    let config = if let Some(template_name) = args.template {
+        let template = get_template(&template_name).ok_or_else(|| {
+            let available = list_templates().join(", ");
+            anyhow::anyhow!(
+                "Unknown template '{}'. Available templates: {}",
+                template_name,
+                available
+            )
+        })?;
+
+        let updated = config_service.init_from_template(template)?;
+        println!("  Template '{}' applied:", template.name);
         for kind in &updated.kinds.definitions {
             println!("    {} - {}", kind.slug, kind.description);
         }

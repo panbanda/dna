@@ -402,6 +402,114 @@ pub struct ProjectConfig {
     pub kinds: KindsConfig,
 }
 
+/// A kind definition within a template
+#[derive(Debug, Clone)]
+pub struct TemplateKind {
+    pub slug: &'static str,
+    pub description: &'static str,
+}
+
+/// A project template defining a set of artifact kinds
+#[derive(Debug, Clone)]
+pub struct Template {
+    pub name: &'static str,
+    pub description: &'static str,
+    pub kinds: &'static [TemplateKind],
+}
+
+/// Intent template: truth-driven governance based on intent-starter pattern
+pub static TEMPLATE_INTENT: Template = Template {
+    name: "intent",
+    description: "Truth-driven governance for system identity",
+    kinds: &[
+        TemplateKind {
+            slug: "intent",
+            description: "Declarative 'must' statement: one user-observable outcome or rule. No implementation. Ex: 'Orders must not ship until payment confirmed'",
+        },
+        TemplateKind {
+            slug: "contract",
+            description: "External promise: one endpoint, event, or interface. Ex: 'POST /orders returns 201 with order_id'",
+        },
+        TemplateKind {
+            slug: "algorithm",
+            description: "Computation rule: one formula or threshold. Ex: 'discount = 0.1 when qty > 10'",
+        },
+        TemplateKind {
+            slug: "evaluation",
+            description: "Executable test: one invariant, scenario, or regression. Use --label type=invariant|scenario|regression. Ex: 'Account balance >= 0' or 'Given expired token, then 401'",
+        },
+        TemplateKind {
+            slug: "pace",
+            description: "Change governance: one concern as fast/medium/slow. Ex: 'auth model: slow'",
+        },
+        TemplateKind {
+            slug: "monitor",
+            description: "Operational observable: one metric or SLO. Ex: 'p99_latency < 200ms'",
+        },
+        TemplateKind {
+            slug: "glossary",
+            description: "Domain term: one concept with precise meaning. Ex: 'ICP: B2B SaaS, 50-500 employees, Series A+'",
+        },
+        TemplateKind {
+            slug: "integration",
+            description: "External binding: one provider, API, or SLA term. Use --label provider=x. Ex: 'Payment provider: Stripe'",
+        },
+        TemplateKind {
+            slug: "reporting",
+            description: "Reportable requirement: one business or compliance query. Ex: 'Revenue by segment must be queryable'",
+        },
+        TemplateKind {
+            slug: "compliance",
+            description: "Regulatory or legal obligation: one requirement from GDPR, HIPAA, PCI-DSS, SOC2, etc. Use --label regulation=x. Ex: 'PII must be deletable within 30 days of request'",
+        },
+        TemplateKind {
+            slug: "constraint",
+            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
+        },
+    ],
+};
+
+/// AI Safety template: safety and governance for AI/LLM systems
+pub static TEMPLATE_AI_SAFETY: Template = Template {
+    name: "ai-safety",
+    description: "Safety and governance for AI/LLM systems",
+    kinds: &[
+        TemplateKind {
+            slug: "behavior",
+            description: "Model capability, style, or grounding rule. What it does and how. Use --label aspect=capability|grounding|agency|tone. Ex: 'Summarize up to 100k tokens' or 'Must cite source documents'",
+        },
+        TemplateKind {
+            slug: "boundary",
+            description: "Safety limit or content policy. What it must not do. Use --label type=filter|policy|redline. Ex: 'Reject injection patterns' or 'Never generate CSAM'",
+        },
+        TemplateKind {
+            slug: "threat",
+            description: "Attack vector with mitigation. Use --label owasp=LLM01-10. Ex: 'LLM01: Prompt injection via role hijacking - validate system prompt immutability'",
+        },
+        TemplateKind {
+            slug: "eval",
+            description: "Verification benchmark or criteria. Use --label type=safety|bias|accuracy|redteam. Ex: 'Safety score >= 95% on HarmBench' or 'Gender bias < 0.1 on WinoBias'",
+        },
+        TemplateKind {
+            slug: "governance",
+            description: "Oversight, transparency, audit, or provenance. Use --label aspect=oversight|disclosure|audit|provenance. Ex: 'Human review for appeals' or 'Must identify as AI when asked'",
+        },
+    ],
+};
+
+/// All available templates
+pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT, &TEMPLATE_AI_SAFETY];
+
+/// Get a template by name
+pub fn get_template(name: &str) -> Option<&'static Template> {
+    TEMPLATES.iter().find(|t| t.name == name).copied()
+}
+
+/// List all available template names
+pub fn list_templates() -> Vec<&'static str> {
+    TEMPLATES.iter().map(|t| t.name).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -966,6 +1074,110 @@ mod tests {
                 "100 words should estimate at least 100 tokens, got {}",
                 tokens
             );
+        }
+    }
+
+    mod templates {
+        use super::*;
+
+        #[test]
+        fn get_template_returns_intent() {
+            let template = get_template("intent");
+            assert!(template.is_some());
+            let template = template.unwrap();
+            assert_eq!(template.name, "intent");
+            assert!(!template.kinds.is_empty());
+        }
+
+        #[test]
+        fn get_template_returns_none_for_unknown() {
+            assert!(get_template("unknown").is_none());
+            assert!(get_template("").is_none());
+            assert!(get_template("Intent").is_none()); // case sensitive
+        }
+
+        #[test]
+        fn list_templates_includes_all() {
+            let templates = list_templates();
+            assert!(templates.contains(&"intent"));
+            assert!(templates.contains(&"ai-safety"));
+            assert_eq!(templates.len(), 2);
+        }
+
+        #[test]
+        fn get_ai_safety_template() {
+            let template = get_template("ai-safety");
+            assert!(template.is_some());
+            let template = template.unwrap();
+            assert_eq!(template.name, "ai-safety");
+        }
+
+        #[test]
+        fn ai_safety_template_has_expected_kinds() {
+            let template = get_template("ai-safety").unwrap();
+            let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
+
+            assert!(slugs.contains(&"behavior"));
+            assert!(slugs.contains(&"boundary"));
+            assert!(slugs.contains(&"threat"));
+            assert!(slugs.contains(&"eval"));
+            assert!(slugs.contains(&"governance"));
+            assert_eq!(slugs.len(), 5);
+        }
+
+        #[test]
+        fn intent_template_has_expected_kinds() {
+            let template = get_template("intent").unwrap();
+            let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
+
+            assert!(slugs.contains(&"intent"));
+            assert!(slugs.contains(&"contract"));
+            assert!(slugs.contains(&"algorithm"));
+            assert!(slugs.contains(&"evaluation"));
+            assert!(slugs.contains(&"pace"));
+            assert!(slugs.contains(&"monitor"));
+            assert!(slugs.contains(&"glossary"));
+            assert!(slugs.contains(&"integration"));
+            assert!(slugs.contains(&"reporting"));
+            assert!(slugs.contains(&"compliance"));
+            assert!(slugs.contains(&"constraint"));
+            assert_eq!(slugs.len(), 11);
+        }
+
+        #[test]
+        fn all_template_kinds_have_descriptions_with_examples() {
+            for name in list_templates() {
+                let template = get_template(name).unwrap();
+                for kind in template.kinds {
+                    assert!(
+                        !kind.description.is_empty(),
+                        "{}:{} has empty description",
+                        name,
+                        kind.slug
+                    );
+                    assert!(
+                        kind.description.contains("Ex:"),
+                        "{}:{} description should contain an example",
+                        name,
+                        kind.slug
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn all_template_kind_slugs_are_valid() {
+            for name in list_templates() {
+                let template = get_template(name).unwrap();
+                for kind in template.kinds {
+                    assert!(
+                        validate_kind_slug(kind.slug).is_ok(),
+                        "{}:{} has invalid slug",
+                        name,
+                        kind.slug
+                    );
+                }
+            }
         }
     }
 }
