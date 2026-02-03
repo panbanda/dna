@@ -61,53 +61,68 @@ DNA provides predefined templates for common use cases:
 Truth artifacts that constrain implementations across any language or framework:
 
 ```mermaid
-flowchart RL
-    subgraph impl["Implementations"]
-        go["Go App"]
-        py["Python App"]
-        any["...any language"]
-    end
-
-    subgraph coding["Coding Agents"]
-        coder["Coder<br/><sub>intent, contract, algorithm</sub>"]
-        tester["Tester<br/><sub>evaluation, constraint</sub>"]
-        reviewer["Reviewer<br/><sub>compliance, constraint</sub>"]
+flowchart LR
+    subgraph discovery["Discovery Agents"]
+        architect["Architect"]
+        analyst["Analyst"]
+        auditor["Compliance"]
     end
 
     subgraph dna["DNA Layer"]
-        intent["intent"]
-        contract["contract"]
-        algorithm["algorithm"]
-        evaluation["evaluation"]
-        constraint["constraint"]
-        compliance["compliance"]
-        more["..."]
+        intent(["intent"])
+        contract(["contract"])
+        algorithm(["algorithm"])
+        evaluation(["evaluation"])
+        constraint(["constraint"])
+        compliance(["compliance"])
     end
 
-    subgraph discovery["Discovery Agents"]
-        architect["Architect<br/><sub>discovers intent</sub>"]
-        analyst["Analyst<br/><sub>extracts contracts</sub>"]
-        auditor["Compliance<br/><sub>updates regulations</sub>"]
+    subgraph coding["Coding Agents"]
+        coder["Coder"]
+        tester["Tester"]
+        reviewer["Reviewer"]
     end
 
-    architect --> intent
-    analyst --> contract
-    auditor --> compliance
-    intent --> coder
-    contract --> coder
-    algorithm --> coder
-    evaluation --> tester
-    constraint --> tester
-    constraint --> reviewer
-    compliance --> reviewer
-    coder --> go
-    coder --> py
-    coder --> any
+    subgraph impl["Implementations"]
+        go(["Go"])
+        py(["Python"])
+        any(["any..."])
+    end
 
-    style discovery fill:#d1fae5,stroke:#059669
-    style dna fill:#fef3c7,stroke:#d97706
-    style coding fill:#ede9fe,stroke:#7c3aed
-    style impl fill:#f3f4f6,stroke:#6b7280
+    architect -.->|discovers| intent
+    analyst -.->|extracts| contract
+    auditor -.->|updates| compliance
+
+    intent -->|guides| coder
+    contract -->|guides| coder
+    algorithm -->|guides| coder
+    evaluation -->|validates| tester
+    constraint -->|bounds| tester
+    constraint -->|bounds| reviewer
+    compliance -->|enforces| reviewer
+
+    coder ==>|produces| go
+    coder ==>|produces| py
+    coder ==>|produces| any
+
+    style architect fill:#10b981,stroke:#059669,color:#fff
+    style analyst fill:#10b981,stroke:#059669,color:#fff
+    style auditor fill:#10b981,stroke:#059669,color:#fff
+
+    style intent fill:#fbbf24,stroke:#d97706,color:#000
+    style contract fill:#fbbf24,stroke:#d97706,color:#000
+    style algorithm fill:#fbbf24,stroke:#d97706,color:#000
+    style evaluation fill:#fbbf24,stroke:#d97706,color:#000
+    style constraint fill:#f87171,stroke:#dc2626,color:#000
+    style compliance fill:#f87171,stroke:#dc2626,color:#000
+
+    style coder fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style tester fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style reviewer fill:#8b5cf6,stroke:#7c3aed,color:#fff
+
+    style go fill:#6b7280,stroke:#4b5563,color:#fff
+    style py fill:#6b7280,stroke:#4b5563,color:#fff
+    style any fill:#6b7280,stroke:#4b5563,color:#fff
 ```
 
 ### Agentic Template
@@ -115,51 +130,66 @@ flowchart RL
 Truth artifacts for AI agent safety and governance:
 
 ```mermaid
-flowchart RL
-    subgraph impl["AI Systems"]
-        llm["LLM Agent"]
-        rag["RAG Pipeline"]
-        any["...any AI system"]
-    end
-
-    subgraph coding["Implementation Agents"]
-        safety["Safety Coder<br/><sub>behavior, boundary</sub>"]
-        redteam["Red Team<br/><sub>threat, eval</sub>"]
-        monitor["Monitor<br/><sub>governance, boundary</sub>"]
+flowchart LR
+    subgraph discovery["Governance Agents"]
+        hunter["Threat Hunter"]
+        policy["Policy"]
+        eval_agent["Eval"]
     end
 
     subgraph dna["DNA Layer"]
-        behavior["behavior"]
-        boundary["boundary"]
-        threat["threat"]
-        eval["eval"]
-        governance["governance"]
+        behavior(["behavior"])
+        boundary(["boundary"])
+        threat(["threat"])
+        eval(["eval"])
+        governance(["governance"])
     end
 
-    subgraph discovery["Governance Agents"]
-        hunter["Threat Hunter<br/><sub>discovers risks</sub>"]
-        policy["Policy<br/><sub>defines boundaries</sub>"]
-        eval_agent["Eval<br/><sub>creates benchmarks</sub>"]
+    subgraph coding["Implementation Agents"]
+        safety["Safety Coder"]
+        redteam["Red Team"]
+        monitor["Monitor"]
     end
 
-    hunter --> threat
-    policy --> boundary
-    policy --> governance
-    eval_agent --> eval
-    behavior --> safety
-    boundary --> safety
-    boundary --> monitor
-    threat --> redteam
-    eval --> redteam
-    governance --> monitor
-    safety --> llm
-    safety --> rag
-    safety --> any
+    subgraph impl["AI Systems"]
+        llm(["LLM Agent"])
+        rag(["RAG"])
+        any(["any..."])
+    end
 
-    style discovery fill:#fce7f3,stroke:#db2777
-    style dna fill:#dbeafe,stroke:#2563eb
-    style coding fill:#ede9fe,stroke:#7c3aed
-    style impl fill:#f3f4f6,stroke:#6b7280
+    hunter -.->|discovers| threat
+    policy -.->|defines| boundary
+    policy -.->|defines| governance
+    eval_agent -.->|creates| eval
+
+    behavior -->|shapes| safety
+    boundary -->|limits| safety
+    boundary -->|limits| monitor
+    threat -->|targets| redteam
+    eval -->|validates| redteam
+    governance -->|enforces| monitor
+
+    safety ==>|produces| llm
+    safety ==>|produces| rag
+    safety ==>|produces| any
+
+    style hunter fill:#db2777,stroke:#be185d,color:#fff
+    style policy fill:#db2777,stroke:#be185d,color:#fff
+    style eval_agent fill:#db2777,stroke:#be185d,color:#fff
+
+    style behavior fill:#60a5fa,stroke:#2563eb,color:#000
+    style boundary fill:#f87171,stroke:#dc2626,color:#000
+    style threat fill:#f87171,stroke:#dc2626,color:#000
+    style eval fill:#60a5fa,stroke:#2563eb,color:#000
+    style governance fill:#a78bfa,stroke:#7c3aed,color:#000
+
+    style safety fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style redteam fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style monitor fill:#8b5cf6,stroke:#7c3aed,color:#fff
+
+    style llm fill:#6b7280,stroke:#4b5563,color:#fff
+    style rag fill:#6b7280,stroke:#4b5563,color:#fff
+    style any fill:#6b7280,stroke:#4b5563,color:#fff
 ```
 
 ```bash
