@@ -340,6 +340,9 @@ pub struct StorageConfig {
     /// Default: ".dna/artifacts.lance" (relative to project root)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub uri: Option<String>,
+    /// Enable auto-pruning after mutations (default: false preserves history)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub auto_prune: Option<bool>,
 }
 
 /// Definition of a registered artifact kind
@@ -735,6 +738,12 @@ mod tests {
         fn default_has_no_uri() {
             let config = StorageConfig::default();
             assert!(config.uri.is_none());
+        }
+
+        #[test]
+        fn default_has_no_auto_prune() {
+            let config = StorageConfig::default();
+            assert!(config.auto_prune.is_none());
         }
     }
 

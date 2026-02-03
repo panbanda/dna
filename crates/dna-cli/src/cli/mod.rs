@@ -5,6 +5,7 @@ mod kind;
 mod mcp;
 mod render;
 mod search;
+mod version;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
@@ -71,6 +72,12 @@ pub enum Commands {
 
     /// Manage artifact kinds
     Kind(kind::KindArgs),
+
+    /// Compact database and cleanup old versions
+    Prune(version::PruneArgs),
+
+    /// List database versions
+    Versions(version::VersionsArgs),
 }
 
 /// Execute the CLI command
@@ -89,5 +96,7 @@ pub async fn execute(cli: Cli) -> Result<()> {
         Commands::Config(args) => config::execute(args).await,
         Commands::Mcp(args) => mcp::execute(args).await,
         Commands::Kind(args) => kind::execute(args).await,
+        Commands::Prune(args) => version::execute_prune(args).await,
+        Commands::Versions(args) => version::execute_versions(args).await,
     }
 }
