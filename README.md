@@ -56,6 +56,60 @@ DNA provides predefined templates for common use cases:
 | `intent` | Software systems | 11 kinds: intent, contract, algorithm, evaluation, pace, monitor, glossary, integration, reporting, compliance, constraint |
 | `ai-safety` | AI/LLM systems | 5 kinds: behavior, boundary, threat, eval, governance |
 
+### Intent Template
+
+Truth artifacts that constrain implementations across any language or framework:
+
+```mermaid
+flowchart TB
+    subgraph truth["Truth Layer"]
+        intent["Intent<br/><i>what the system must do</i>"]
+        contract["Contract<br/><i>API guarantees</i>"]
+        algorithm["Algorithm<br/><i>computational rules</i>"]
+        evaluation["Evaluation<br/><i>acceptance criteria</i>"]
+        constraint["Constraint<br/><i>boundaries & limits</i>"]
+        pace["Pace<br/><i>change velocity</i>"]
+        monitor["Monitor<br/><i>observability rules</i>"]
+        glossary["Glossary<br/><i>domain terms</i>"]
+        integration["Integration<br/><i>external systems</i>"]
+        reporting["Reporting<br/><i>data outputs</i>"]
+        compliance["Compliance<br/><i>regulatory rules</i>"]
+    end
+
+    truth -->|constrains| impl1["Go App"]
+    truth -->|constrains| impl2["Python App"]
+    truth -->|constrains| impl3["...any language"]
+
+    style truth fill:#fef3c7,stroke:#d97706
+    style impl1 fill:#fef3c7,stroke:#d97706
+    style impl2 fill:#fef3c7,stroke:#d97706
+    style impl3 fill:#fef3c7,stroke:#d97706
+```
+
+### AI Safety Template
+
+Truth artifacts for AI/LLM system safety and governance:
+
+```mermaid
+flowchart TB
+    subgraph truth["Truth Layer"]
+        behavior["Behavior<br/><i>expected AI actions</i>"]
+        boundary["Boundary<br/><i>operational limits</i>"]
+        threat["Threat<br/><i>risk vectors</i>"]
+        eval["Eval<br/><i>safety tests</i>"]
+        governance["Governance<br/><i>oversight rules</i>"]
+    end
+
+    truth -->|constrains| impl1["LLM Agent"]
+    truth -->|constrains| impl2["RAG Pipeline"]
+    truth -->|constrains| impl3["...any AI system"]
+
+    style truth fill:#dbeafe,stroke:#2563eb
+    style impl1 fill:#dbeafe,stroke:#2563eb
+    style impl2 fill:#dbeafe,stroke:#2563eb
+    style impl3 fill:#dbeafe,stroke:#2563eb
+```
+
 ```bash
 # List available templates
 dna init --list-templates
