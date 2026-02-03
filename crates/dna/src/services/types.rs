@@ -469,8 +469,36 @@ pub static TEMPLATE_INTENT: Template = Template {
     ],
 };
 
+/// AI Safety template: safety and governance for AI/LLM systems
+pub static TEMPLATE_AI_SAFETY: Template = Template {
+    name: "ai-safety",
+    description: "Safety and governance for AI/LLM systems",
+    kinds: &[
+        TemplateKind {
+            slug: "behavior",
+            description: "Model capability, style, or grounding rule. What it does and how. Use --label aspect=capability|grounding|agency|tone. Ex: 'Summarize up to 100k tokens' or 'Must cite source documents'",
+        },
+        TemplateKind {
+            slug: "boundary",
+            description: "Safety limit or content policy. What it must not do. Use --label type=filter|policy|redline. Ex: 'Reject injection patterns' or 'Never generate CSAM'",
+        },
+        TemplateKind {
+            slug: "threat",
+            description: "Attack vector with mitigation. Use --label owasp=LLM01-10. Ex: 'LLM01: Prompt injection via role hijacking - validate system prompt immutability'",
+        },
+        TemplateKind {
+            slug: "eval",
+            description: "Verification benchmark or criteria. Use --label type=safety|bias|accuracy|redteam. Ex: 'Safety score >= 95% on HarmBench' or 'Gender bias < 0.1 on WinoBias'",
+        },
+        TemplateKind {
+            slug: "governance",
+            description: "Oversight, transparency, audit, or provenance. Use --label aspect=oversight|disclosure|audit|provenance. Ex: 'Human review for appeals' or 'Must identify as AI when asked'",
+        },
+    ],
+};
+
 /// All available templates
-pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT];
+pub static TEMPLATES: &[&Template] = &[&TEMPLATE_INTENT, &TEMPLATE_AI_SAFETY];
 
 /// Get a template by name
 pub fn get_template(name: &str) -> Option<&'static Template> {
@@ -1069,9 +1097,32 @@ mod tests {
         }
 
         #[test]
-        fn list_templates_includes_intent() {
+        fn list_templates_includes_all() {
             let templates = list_templates();
             assert!(templates.contains(&"intent"));
+            assert!(templates.contains(&"ai-safety"));
+            assert_eq!(templates.len(), 2);
+        }
+
+        #[test]
+        fn get_ai_safety_template() {
+            let template = get_template("ai-safety");
+            assert!(template.is_some());
+            let template = template.unwrap();
+            assert_eq!(template.name, "ai-safety");
+        }
+
+        #[test]
+        fn ai_safety_template_has_expected_kinds() {
+            let template = get_template("ai-safety").unwrap();
+            let slugs: Vec<&str> = template.kinds.iter().map(|k| k.slug).collect();
+
+            assert!(slugs.contains(&"behavior"));
+            assert!(slugs.contains(&"boundary"));
+            assert!(slugs.contains(&"threat"));
+            assert!(slugs.contains(&"eval"));
+            assert!(slugs.contains(&"governance"));
+            assert_eq!(slugs.len(), 5);
         }
 
         #[test]
@@ -1095,30 +1146,37 @@ mod tests {
 
         #[test]
         fn all_template_kinds_have_descriptions_with_examples() {
-            let template = get_template("intent").unwrap();
-            for kind in template.kinds {
-                assert!(
-                    !kind.description.is_empty(),
-                    "{} has empty description",
-                    kind.slug
-                );
-                assert!(
-                    kind.description.contains("Ex:") || kind.description.contains("Ex:"),
-                    "{} description should contain an example",
-                    kind.slug
-                );
+            for name in list_templates() {
+                let template = get_template(name).unwrap();
+                for kind in template.kinds {
+                    assert!(
+                        !kind.description.is_empty(),
+                        "{}:{} has empty description",
+                        name,
+                        kind.slug
+                    );
+                    assert!(
+                        kind.description.contains("Ex:"),
+                        "{}:{} description should contain an example",
+                        name,
+                        kind.slug
+                    );
+                }
             }
         }
 
         #[test]
         fn all_template_kind_slugs_are_valid() {
-            let template = get_template("intent").unwrap();
-            for kind in template.kinds {
-                assert!(
-                    validate_kind_slug(kind.slug).is_ok(),
-                    "Template kind '{}' has invalid slug",
-                    kind.slug
-                );
+            for name in list_templates() {
+                let template = get_template(name).unwrap();
+                for kind in template.kinds {
+                    assert!(
+                        validate_kind_slug(kind.slug).is_ok(),
+                        "{}:{} has invalid slug",
+                        name,
+                        kind.slug
+                    );
+                }
             }
         }
     }
