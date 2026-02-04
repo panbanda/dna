@@ -146,7 +146,9 @@ fn parse_content_format(s: &str) -> Result<ContentFormat, String> {
     )
 )]
 async fn health() -> impl IntoResponse {
-    Json(serde_json::json!({"status": "ok"}))
+    Json(HealthResponse {
+        status: "ok".to_string(),
+    })
 }
 
 #[utoipa::path(
@@ -195,7 +197,7 @@ async fn list_artifacts(
     };
 
     match state.artifact_service.list(filters).await {
-        Ok(artifacts) => Json(serde_json::json!({"artifacts": artifacts})).into_response(),
+        Ok(artifacts) => Json(ArtifactListResponse { artifacts }).into_response(),
         Err(e) => error_response(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             "internal_error",
@@ -380,7 +382,7 @@ async fn search_artifacts(
     };
 
     match state.search_service.search(&body.query, filters).await {
-        Ok(results) => Json(serde_json::json!({"results": results})).into_response(),
+        Ok(results) => Json(SearchResultsResponse { results }).into_response(),
         Err(e) => error_response(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             "internal_error",
@@ -447,7 +449,7 @@ async fn kind_list_artifacts(
     };
 
     match state.artifact_service.list(filters).await {
-        Ok(artifacts) => Json(serde_json::json!({"artifacts": artifacts})).into_response(),
+        Ok(artifacts) => Json(ArtifactListResponse { artifacts }).into_response(),
         Err(e) => error_response(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             "internal_error",
@@ -531,7 +533,7 @@ async fn kind_search_artifacts(
     };
 
     match state.search_service.search(&body.query, filters).await {
-        Ok(results) => Json(serde_json::json!({"results": results})).into_response(),
+        Ok(results) => Json(SearchResultsResponse { results }).into_response(),
         Err(e) => error_response(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             "internal_error",
@@ -585,7 +587,7 @@ async fn list_changes(
     };
 
     match state.artifact_service.list(filters).await {
-        Ok(artifacts) => Json(serde_json::json!({"changes": artifacts})).into_response(),
+        Ok(changes) => Json(ChangesResponse { changes }).into_response(),
         Err(e) => error_response(
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,
             "internal_error",
@@ -600,7 +602,6 @@ async fn list_changes(
     info(
         title = "DNA API",
         description = "Truth artifact management API with vector search",
-        version = "0.3.2",
         license(name = "MIT")
     ),
     paths(
@@ -652,6 +653,9 @@ struct SecurityAddon;
 
 impl utoipa::Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        // Set version from Cargo.toml
+        openapi.info.version = env!("CARGO_PKG_VERSION").to_string();
+
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
                 "bearer_auth",
