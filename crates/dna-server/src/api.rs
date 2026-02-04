@@ -11,7 +11,7 @@ use dna::services::{Artifact, ContentFormat, SearchFilters, SearchResult, Servic
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
-use utoipa::{IntoParams, OpenApi, ToSchema};
+use utoipa::{IntoParams, Modify, OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::auth::{auth_middleware, require_write, ApiKeyAuth};
