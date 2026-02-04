@@ -67,6 +67,10 @@ thiserror = "2.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
+# OpenAPI
+utoipa = { version = "5", features = ["chrono"] }
+utoipa-swagger-ui = { version = "9", features = ["axum"] }
+
 # Dev dependencies
 tempfile = "3.14"
 tokio-test = "0.4"

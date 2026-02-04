@@ -3,6 +3,9 @@ use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[cfg(feature = "openapi")]
+use utoipa::ToSchema;
+
 /// Maximum length for a kind slug (64 characters).
 pub const KIND_SLUG_MAX_LENGTH: usize = 64;
 
@@ -125,6 +128,7 @@ pub fn validate_kind_slug(slug: &str) -> Result<(), KindValidationError> {
 
 /// Content format enumeration
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+#[cfg_attr(feature = "openapi", derive(ToSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum ContentFormat {
     Markdown,
@@ -164,6 +168,7 @@ impl std::str::FromStr for ContentFormat {
 
 /// Core artifact structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(ToSchema))]
 pub struct Artifact {
     pub id: String,
     pub kind: String,
@@ -306,6 +311,7 @@ pub enum ReindexTarget {
 
 /// Search result with similarity score
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "openapi", derive(ToSchema))]
 pub struct SearchResult {
     pub artifact: Artifact,
     pub score: f32,

@@ -67,9 +67,13 @@ tracing = { workspace = true }
 rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk", rev = "8d09f88", features = ["server", "macros", "transport-io", "schemars"] }
 schemars = "1.0"
 
+# OpenAPI (optional)
+utoipa = { workspace = true, optional = true }
+
 [features]
 default = []
 testing = []
+openapi = ["dep:utoipa"]
 
 [dev-dependencies]
 tempfile = { workspace = true }
