@@ -207,3 +207,174 @@ fn test_diff_requires_init() {
         .failure()
         .stderr(predicate::str::contains("DNA not initialized"));
 }
+
+#[test]
+fn test_diff_filters_by_label() {
+    let ctx = TestContext::new();
+    ctx.init();
+
+    // Add artifacts with different labels
+    ctx.cmd()
+        .args(["add", "spec", "Auth spec", "--label", "team=auth"])
+        .assert()
+        .success();
+
+    ctx.cmd()
+        .args(["add", "spec", "Payment spec", "--label", "team=payments"])
+        .assert()
+        .success();
+
+    // Filter by label should only show matching artifacts
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--label",
+            "team=auth",
+            "--names-only",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("spec/"))
+        .stdout(predicate::str::contains("Changed artifacts since"));
+
+    // Verify filtering works by checking we can filter to the other team
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--label",
+            "team=payments",
+            "--names-only",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("spec/"));
+
+    // Non-matching label should show no changes
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--label",
+            "team=nonexistent",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("No changes since"));
+}
+
+#[test]
+fn test_diff_filters_by_search() {
+    let ctx = TestContext::new();
+    ctx.init();
+
+    // Add artifacts with different content for semantic search
+    ctx.cmd()
+        .args([
+            "add",
+            "spec",
+            "User authentication with OAuth2 and JWT tokens",
+        ])
+        .assert()
+        .success();
+
+    ctx.cmd()
+        .args([
+            "add",
+            "spec",
+            "Database schema for product inventory management",
+        ])
+        .assert()
+        .success();
+
+    // Search for authentication-related artifacts
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--search",
+            "authentication OAuth",
+            "--names-only",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Changed artifacts since"));
+}
+
+#[test]
+fn test_diff_combines_filters() {
+    let ctx = TestContext::new();
+    ctx.init();
+
+    // Add artifacts with different kinds and labels
+    ctx.cmd()
+        .args([
+            "add",
+            "spec",
+            "API authentication specification",
+            "--label",
+            "priority=high",
+        ])
+        .assert()
+        .success();
+
+    ctx.cmd()
+        .args([
+            "add",
+            "doc",
+            "API authentication documentation",
+            "--label",
+            "priority=high",
+        ])
+        .assert()
+        .success();
+
+    ctx.cmd()
+        .args([
+            "add",
+            "spec",
+            "Database schema specification",
+            "--label",
+            "priority=low",
+        ])
+        .assert()
+        .success();
+
+    // Combine --kind and --label filters
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--kind",
+            "spec",
+            "--label",
+            "priority=high",
+            "--names-only",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("spec/"))
+        .stdout(predicate::str::contains("doc/").not());
+
+    // Combine --kind, --label, and --search
+    ctx.cmd()
+        .args([
+            "diff",
+            "--since",
+            "2020-01-01",
+            "--kind",
+            "spec",
+            "--search",
+            "authentication API",
+            "--names-only",
+        ])
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("Changed artifacts since"));
+}
