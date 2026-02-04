@@ -143,7 +143,8 @@ fn parse_content_format(s: &str) -> Result<ContentFormat, String> {
     tag = "System",
     responses(
         (status = 200, description = "Service is healthy", body = HealthResponse)
-    )
+    ),
+    security()
 )]
 async fn health() -> impl IntoResponse {
     Json(HealthResponse {

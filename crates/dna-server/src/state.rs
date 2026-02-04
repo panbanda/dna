@@ -48,9 +48,30 @@ pub struct ServerConfig {
     /// Bind address (default: 0.0.0.0:3000)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub bind: Option<String>,
-    /// API documentation settings
-    #[serde(default)]
+    /// API documentation settings.
+    /// Accepts a bool (e.g. `api_docs = false`) or a full config table.
+    #[serde(default, deserialize_with = "deserialize_api_docs")]
     pub api_docs: ApiDocsConfig,
+}
+
+fn deserialize_api_docs<'de, D>(deserializer: D) -> Result<ApiDocsConfig, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum ApiDocsOrBool {
+        Bool(bool),
+        Config(ApiDocsConfig),
+    }
+
+    match ApiDocsOrBool::deserialize(deserializer)? {
+        ApiDocsOrBool::Bool(enabled) => Ok(ApiDocsConfig {
+            enabled,
+            ..Default::default()
+        }),
+        ApiDocsOrBool::Config(config) => Ok(config),
+    }
 }
 
 #[derive(Clone)]
