@@ -644,17 +644,45 @@ async fn list_changes(
     ),
     security(
         ("bearer_auth" = [])
-    ),
-    modifiers(&SecurityAddon)
+    )
 )]
 pub struct ApiDoc;
 
-struct SecurityAddon;
+impl ApiDoc {
+    pub fn openapi_with_config(config: &ApiDocsConfig) -> utoipa::openapi::OpenApi {
+        let mut doc = Self::openapi();
+        OpenApiModifier(config).modify(&mut doc);
+        doc
+    }
+}
 
-impl utoipa::Modify for SecurityAddon {
+use crate::state::ApiDocsConfig;
+
+struct OpenApiModifier<'a>(&'a ApiDocsConfig);
+
+impl OpenApiModifier<'_> {
+    fn full_description(&self, base: &str) -> String {
+        let desc = self.0.description.as_deref().unwrap_or(base);
+        format!(
+            "{}\n\n---\nPowered by [DNA](https://github.com/panbanda/dna) v{}",
+            desc,
+            env!("CARGO_PKG_VERSION")
+        )
+    }
+}
+
+impl utoipa::Modify for OpenApiModifier<'_> {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
-        // Set version from Cargo.toml
-        openapi.info.version = env!("CARGO_PKG_VERSION").to_string();
+        if let Some(title) = &self.0.title {
+            openapi.info.title = title.clone();
+        }
+        openapi.info.description =
+            Some(self.full_description(openapi.info.description.as_deref().unwrap_or_default()));
+        openapi.info.version = self
+            .0
+            .version
+            .clone()
+            .unwrap_or_else(|| env!("CARGO_PKG_VERSION").to_string());
 
         if let Some(components) = openapi.components.as_mut() {
             components.add_security_scheme(
@@ -669,7 +697,7 @@ impl utoipa::Modify for SecurityAddon {
     }
 }
 
-pub fn build_router(state: AppState, enable_api_docs: bool) -> Router {
+pub fn build_router(state: AppState) -> Router {
     let api_key_auth = ApiKeyAuth::from_env();
 
     let cors = CorsLayer::new()
@@ -730,9 +758,11 @@ pub fn build_router(state: AppState, enable_api_docs: bool) -> Router {
         .merge(mcp_routes);
 
     // Conditionally add API documentation
-    if enable_api_docs {
-        router =
-            router.merge(SwaggerUi::new("/docs").url("/api-docs/openapi.json", ApiDoc::openapi()));
+    if state.server_config.api_docs.enabled {
+        router = router.merge(SwaggerUi::new("/docs").url(
+            "/api-docs/openapi.json",
+            ApiDoc::openapi_with_config(&state.server_config.api_docs),
+        ));
     }
 
     router.layer(cors).with_state(state)
