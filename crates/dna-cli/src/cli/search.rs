@@ -2,7 +2,9 @@ use super::parse_metadata;
 use anyhow::Result;
 use chrono::{NaiveDate, TimeZone, Utc};
 use clap::{ArgGroup, Args};
+use dna::db::Database;
 use dna::services::{ArtifactService, ConfigService, ReindexTarget, SearchFilters, SearchService};
+use similar::{ChangeTag, TextDiff};
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -47,14 +49,22 @@ pub struct ListArgs {
 }
 
 #[derive(Args)]
-pub struct ChangesArgs {
-    /// Show artifacts updated after timestamp
+pub struct DiffArgs {
+    /// Show changes since this date (YYYY-MM-DD)
     #[arg(long)]
-    after: Option<String>,
+    since: String,
 
-    /// Show artifacts updated before timestamp
+    /// Show changes until this date (YYYY-MM-DD). Defaults to now.
     #[arg(long)]
-    before: Option<String>,
+    until: Option<String>,
+
+    /// Filter by artifact kind
+    #[arg(long)]
+    kind: Option<String>,
+
+    /// Show only artifact IDs, not content diffs
+    #[arg(long)]
+    names_only: bool,
 }
 
 /// Arguments for the reindex command.
@@ -249,7 +259,13 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
     Ok(())
 }
 
-pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
+fn parse_date(s: &str) -> Result<chrono::DateTime<Utc>> {
+    NaiveDate::parse_from_str(s, "%Y-%m-%d")
+        .map_err(|e| anyhow::anyhow!("Invalid date '{}': {}. Use YYYY-MM-DD.", s, e))
+        .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
+}
+
+pub async fn execute_diff(args: DiffArgs) -> Result<()> {
     let project_root = PathBuf::from(".");
     let config_service = ConfigService::new(&project_root);
 
@@ -264,36 +280,88 @@ pub async fn execute_changes(args: ChangesArgs) -> Result<()> {
     let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
     let embedding = dna::embedding::create_provider(&config.model).await?;
 
-    let service = ArtifactService::new(db, embedding);
+    let service = ArtifactService::new(db.clone(), embedding);
 
-    let after = args
-        .after
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
-    let before = args
-        .before
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
+    let since = parse_date(&args.since)?;
+    let until = args.until.as_ref().map(|s| parse_date(s)).transpose()?;
 
+    // Find artifacts updated in the time range
     let filters = SearchFilters {
-        after,
-        before,
+        kind: args.kind.clone(),
+        after: Some(since),
+        before: until,
         ..Default::default()
     };
 
     let artifacts = service.list(filters).await?;
 
-    println!("Found {} changed artifacts:", artifacts.len());
-    for artifact in artifacts {
-        println!(
-            "  {} - {} (updated: {})",
-            artifact.id, artifact.kind, artifact.updated_at
-        );
+    if artifacts.is_empty() {
+        println!("No changes since {}", args.since);
+        return Ok(());
+    }
+
+    if args.names_only {
+        println!("Changed artifacts since {}:", args.since);
+        for artifact in &artifacts {
+            let name = artifact.name.as_deref().unwrap_or(&artifact.id);
+            println!("  {}/{} ({})", artifact.kind, name, artifact.id);
+        }
+        return Ok(());
+    }
+
+    // Find the DB version from before --since to get old content
+    let versions = db.list_versions(None).await?;
+    let baseline_version = versions
+        .iter()
+        .filter(|v| v.timestamp < since)
+        .max_by_key(|v| v.version)
+        .map(|v| v.version);
+
+    // Output diffs
+    for artifact in &artifacts {
+        let name = artifact.name.as_deref().unwrap_or(&artifact.id);
+        let header = format!("{}/{}", artifact.kind, name);
+
+        let old_content = if let Some(version) = baseline_version {
+            db.get_at_version(&artifact.id, version)
+                .await?
+                .map(|a| a.content)
+        } else {
+            None
+        };
+
+        match old_content {
+            Some(old) if old != artifact.content => {
+                println!("{} (modified)", header);
+                print_diff(&old, &artifact.content);
+            },
+            Some(_) => {
+                // Content unchanged (only metadata changed)
+                println!("{} (metadata only)", header);
+            },
+            None => {
+                println!("{} (added)", header);
+                for line in artifact.content.lines() {
+                    println!("+ {}", line);
+                }
+            },
+        }
+        println!();
     }
 
     Ok(())
+}
+
+fn print_diff(old: &str, new: &str) {
+    let diff = TextDiff::from_lines(old, new);
+    for change in diff.iter_all_changes() {
+        let prefix = match change.tag() {
+            ChangeTag::Delete => "-",
+            ChangeTag::Insert => "+",
+            ChangeTag::Equal => " ",
+        };
+        print!("{} {}", prefix, change);
+    }
 }
 
 pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
