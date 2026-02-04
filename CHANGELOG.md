@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.3](https://github.com/panbanda/dna/compare/dna-v0.3.2...dna-v0.3.3) (2026-02-04)
+
+
+### Features
+
+* add API docs branding to config ([b1bb8b1](https://github.com/panbanda/dna/commit/b1bb8b10d55ab78cc7d57185bad4e993bb036ec8))
+* **server:** add OpenAPI spec generation with Swagger UI ([efb3809](https://github.com/panbanda/dna/commit/efb38094a0af26e6bd39ece1ddd62f06917464fb))
+* **server:** add OpenAPI spec generation with Swagger UI ([9ee1325](https://github.com/panbanda/dna/commit/9ee13257c46cc2989b440bb65eb7332e1db375e1))
+
+
+### Bug Fixes
+
+* add IntoParams derive for query structs ([b0587ff](https://github.com/panbanda/dna/commit/b0587ff45bbdf9101595db0efa6af72555a9ec1d))
+* import Modify trait for openapi_with_config ([e5d8852](https://github.com/panbanda/dna/commit/e5d88523c1894c1c24e8e9d2d626847ce5837ed2))
+* mark /health as public in OpenAPI, accept bool for api_docs config ([a3e76f4](https://github.com/panbanda/dna/commit/a3e76f44eb62b20a39daa244afb05ad74f0036aa))
+* use declared response types and dynamic version ([f4ef1e8](https://github.com/panbanda/dna/commit/f4ef1e8d6180a1e0b39db56ee3885165667d6bef))
+
 ## [0.3.2](https://github.com/panbanda/dna/compare/dna-v0.3.1...dna-v0.3.2) (2026-02-04)
 
 
