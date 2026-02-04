@@ -59,8 +59,8 @@ pub enum Commands {
     /// List artifacts
     List(search::ListArgs),
 
-    /// Show changes since a timestamp or git ref
-    Changes(search::ChangesArgs),
+    /// Show artifact diffs since a date
+    Diff(search::DiffArgs),
 
     /// Render artifacts to filesystem
     Render(render::RenderArgs),
@@ -94,7 +94,7 @@ pub async fn execute(cli: Cli) -> Result<()> {
         Commands::Remove(args) => artifact::execute_remove(args).await,
         Commands::Search(args) => search::execute_search(args).await,
         Commands::List(args) => search::execute_list(args).await,
-        Commands::Changes(args) => search::execute_changes(args).await,
+        Commands::Diff(args) => search::execute_diff(args).await,
         Commands::Render(args) => render::execute(args).await,
         Commands::Reindex(args) => search::execute_reindex(args).await,
         Commands::Config(args) => config::execute(args).await,
