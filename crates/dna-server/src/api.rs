@@ -11,14 +11,14 @@ use dna::services::{Artifact, ContentFormat, SearchFilters, SearchResult, Servic
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use tower_http::cors::CorsLayer;
-use utoipa::{OpenApi, ToSchema};
+use utoipa::{IntoParams, OpenApi, ToSchema};
 use utoipa_swagger_ui::SwaggerUi;
 
 use crate::auth::{auth_middleware, require_write, ApiKeyAuth};
 use crate::state::AppState;
 
 /// Query parameters for listing artifacts
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct ListQuery {
     /// Filter by artifact kind
     kind: Option<String>,
@@ -414,7 +414,7 @@ pub struct KindSearchBody {
 }
 
 /// Query parameters for listing artifacts within a kind scope
-#[derive(Deserialize, ToSchema)]
+#[derive(Deserialize, ToSchema, IntoParams)]
 pub struct KindListQuery {
     /// Maximum number of results to return
     limit: Option<usize>,
