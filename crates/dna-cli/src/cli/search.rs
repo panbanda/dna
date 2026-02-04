@@ -5,6 +5,7 @@ use clap::{ArgGroup, Args};
 use dna::db::Database;
 use dna::services::{ArtifactService, ConfigService, ReindexTarget, SearchFilters, SearchService};
 use similar::{ChangeTag, TextDiff};
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 #[derive(Args)]
@@ -61,6 +62,14 @@ pub struct DiffArgs {
     /// Filter by artifact kind
     #[arg(long)]
     kind: Option<String>,
+
+    /// Filter by metadata label (key=value, can be repeated)
+    #[arg(long = "label", short = 'l')]
+    labels: Vec<String>,
+
+    /// Filter by semantic search query
+    #[arg(long)]
+    search: Option<String>,
 
     /// Show only artifact IDs, not content diffs
     #[arg(long)]
@@ -280,20 +289,42 @@ pub async fn execute_diff(args: DiffArgs) -> Result<()> {
     let db = std::sync::Arc::new(dna::db::lance::LanceDatabase::new(&storage_uri).await?);
     let embedding = dna::embedding::create_provider(&config.model).await?;
 
-    let service = ArtifactService::new(db.clone(), embedding);
+    let service = ArtifactService::new(db.clone(), embedding.clone());
 
     let since = parse_date(&args.since)?;
     let until = args.until.as_ref().map(|s| parse_date(s)).transpose()?;
 
+    // Parse label filters
+    let metadata = parse_metadata(&args.labels)?;
+
     // Find artifacts updated in the time range
     let filters = SearchFilters {
         kind: args.kind.clone(),
+        metadata,
         after: Some(since),
         before: until,
         ..Default::default()
     };
 
-    let artifacts = service.list(filters).await?;
+    let mut artifacts = service.list(filters).await?;
+
+    // If --search is provided, filter to only artifacts matching the semantic search
+    if let Some(ref query) = args.search {
+        let search_service = SearchService::new(db.clone(), embedding);
+        let search_results = search_service
+            .search(
+                query,
+                SearchFilters {
+                    kind: args.kind.clone(),
+                    ..Default::default()
+                },
+            )
+            .await?;
+
+        let matching_ids: HashSet<_> = search_results.iter().map(|r| &r.artifact.id).collect();
+
+        artifacts.retain(|a| matching_ids.contains(&a.id));
+    }
 
     if artifacts.is_empty() {
         println!("No changes since {}", args.since);
