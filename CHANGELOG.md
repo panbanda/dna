@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.2](https://github.com/panbanda/dna/compare/dna-v0.3.1...dna-v0.3.2) (2026-02-04)
+
+
+### Features
+
+* add diff command to show artifact changes since a date ([afa14ca](https://github.com/panbanda/dna/commit/afa14ca51e5f081423581fe19eaf247c09cf7bc5))
+* add diff command to show artifact changes since a date ([f131ffd](https://github.com/panbanda/dna/commit/f131ffd4672b709daf38926757aa7b06b2aaba33))
+* **diff:** add --label and --search filter options ([89af29a](https://github.com/panbanda/dna/commit/89af29ae6dcc3c3324fc5a878724d7f1431388bd))
+* **diff:** add --label and --search filter options ([fab8e7d](https://github.com/panbanda/dna/commit/fab8e7dc8221ac653ec9dddfa6c632a08b930b0e))
+
 ## [0.3.1](https://github.com/panbanda/dna/compare/dna-v0.3.0...dna-v0.3.1) (2026-02-03)
 
 
