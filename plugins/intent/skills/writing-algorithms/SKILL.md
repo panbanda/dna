@@ -43,7 +43,7 @@ Edge cases:
 - Currency: all arithmetic in integer cents, convert to display format only at render
 - Rounding: round each line item to nearest cent before summing" \
   --name "Order price calculation" \
-  --label area=billing \
+  --label domain=billing \
   --format markdown
 ```
 
@@ -64,7 +64,7 @@ Thresholds:
 - 0.3 <= score < 0.7: flag for review
 - score >= 0.7: block and notify" \
   --name "Transaction risk scoring" \
-  --label area=fraud
+  --label domain=fraud
 ```
 
 **Bad:**

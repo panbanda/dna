@@ -33,7 +33,7 @@ A constraint must include:
 dna add constraint \
   "User-provided content must never be interpreted as code, query syntax, or template expressions in any context. All rendering of user content must use contextual output encoding appropriate to the target format. This applies to every output channel including error messages, logs, and admin dashboards." \
   --name "No user content as code" \
-  --label area=security
+  --label domain=security
 ```
 
 An agent in any language reads this and knows: parameterize queries, encode output, no eval. It does not say "use DOMPurify" because the constraint survives a language change.
@@ -42,8 +42,7 @@ An agent in any language reads this and knows: parameterize queries, encode outp
 dna add constraint \
   "API response latency must stay under 200ms at p95 and under 500ms at p99 for all customer-facing endpoints. Background processing endpoints are excluded. This exists because the mobile app has a 2-second timeout and must complete at least 3 sequential API calls during checkout." \
   --name "API latency bounds" \
-  --label area=performance \
-  --label service=api
+  --label domain=performance
 ```
 
 The reason explains why these specific numbers matter, not just that they exist.
@@ -52,7 +51,7 @@ The reason explains why these specific numbers matter, not just that they exist.
 dna add constraint \
   "The system must run stateless for horizontal scaling. No request may depend on server-local state from a previous request. Session data must be stored in a shared backend, not in process memory. This is required because the auto-scaler can terminate any instance at any time." \
   --name "Stateless for horizontal scaling" \
-  --label area=architecture
+  --label domain=architecture
 ```
 
 **Bad:**

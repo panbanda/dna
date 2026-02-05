@@ -165,6 +165,112 @@ Note: Removing a kind does not delete existing artifacts of that kind. Those art
 
 ---
 
+### dna label
+
+Manage registered label keys. Labels must be registered before they can be used on artifacts.
+
+#### dna label add
+
+Register a new label key.
+
+```
+dna label add <KEY> <DESCRIPTION>
+
+Arguments:
+  <KEY>          Label key name. Lowercase alphanumeric and hyphens.
+
+  <DESCRIPTION>  Human-readable description of what this label means.
+                 Used by LLMs to understand when to apply this label.
+```
+
+**Examples:**
+
+```bash
+dna label add domain "Domain or bounded context the artifact belongs to (e.g. auth, billing, orders)"
+dna label add regulation "Regulatory framework that requires this artifact (e.g. gdpr, hipaa, pci-dss)"
+dna label add priority "Relative importance: high, medium, low"
+dna label add provider "External service provider name (e.g. stripe, sendgrid)"
+```
+
+#### dna label list
+
+List all registered label keys.
+
+```
+dna label list
+```
+
+**Output:**
+
+```
+Registered labels (4):
+  domain - Domain or bounded context the artifact belongs to...
+  regulation - Regulatory framework that requires this artifact...
+  priority - Relative importance: high, medium, low
+  provider - External service provider name...
+```
+
+#### dna label show
+
+Show details for a specific label key.
+
+```
+dna label show <KEY>
+
+Arguments:
+  <KEY>    Label key (e.g., "domain", "regulation")
+```
+
+**Example:**
+
+```bash
+dna label show domain
+```
+
+#### dna label remove
+
+Remove a registered label key.
+
+```
+dna label remove <KEY> [OPTIONS]
+
+Arguments:
+  <KEY>    Label key to remove
+
+Options:
+  -f, --force    Remove without confirmation warning
+```
+
+Note: Removing a label key does not strip the label from existing artifacts. Those labels become unregistered but are still present on the artifacts.
+
+---
+
+### dna context
+
+Display all registered kinds and labels for the current project. Useful as a quick orientation before searching or adding artifacts.
+
+```
+dna context
+```
+
+**Output:**
+
+```
+Kinds (11):
+  intent - Declarative 'must' statements defining what the system is
+  contract - External promises others depend on
+  constraint - Technical limits and boundaries
+  ...
+
+Labels (4):
+  domain - Domain or bounded context the artifact belongs to
+  regulation - Regulatory framework that requires this artifact
+  priority - Relative importance: high, medium, low
+  provider - External service provider name
+```
+
+---
+
 ### dna add
 
 Add a new artifact to the knowledge base.
@@ -188,7 +294,6 @@ Options:
               Examples:
                 --label domain=auth
                 --label priority=high
-                --label owner=alice
 
   -c, --context <TEXT>
               Additional context for improved semantic retrieval.
@@ -335,8 +440,8 @@ Options:
               To remove a label, use empty value: --label key=
 
               Examples:
-                --label status=done       # add/update label
-                --label draft=            # remove 'draft' label
+                --label priority=high     # add/update label
+                --label domain=           # remove 'domain' label
 
   -c, --context <TEXT>
               New context. Replaces existing context entirely.
@@ -353,10 +458,10 @@ Options:
 dna update abc123defg --content "Updated requirement text"
 
 # Add a label
-dna update abc123defg --label status=approved
+dna update abc123defg --label priority=high
 
 # Remove a label (empty value)
-dna update abc123defg --label draft=
+dna update abc123defg --label priority=
 
 # Update context
 dna update abc123defg --context "Now part of the v2 auth system"
@@ -367,16 +472,15 @@ dna update abc123defg --context ""
 # Multiple changes at once
 dna update abc123defg \
   --content "Revised requirement" \
-  --label status=approved \
-  --label reviewed-by=alice \
-  --label draft=
+  --label priority=high \
+  --label domain=auth
 ```
 
 **Label removal behavior:**
 
 | Command | Effect |
 |---------|--------|
-| `--label key=value` | Sets label `key` to `value` |
+| `--label key=value` | Sets label `key` to `value` (key must be registered) |
 | `--label key=` | Removes label `key` |
 | `--label key=""` | Removes label `key` |
 
@@ -487,7 +591,7 @@ dna list
 dna list --kind intent
 
 # List with label filter
-dna list --label domain=auth --label status=approved
+dna list --label domain=auth --label priority=high
 
 # Recent artifacts
 dna list --after 2024-01-01 --limit 20
@@ -578,6 +682,15 @@ definitions = [
   { slug = "intent", description = "High-level user goals..." },
   { slug = "contract", description = "API contracts..." },
 ]
+
+# Registered labels
+[[labels.definitions]]
+key = "domain"
+description = "Domain or bounded context the artifact belongs to"
+
+[[labels.definitions]]
+key = "regulation"
+description = "Regulatory framework that requires this artifact"
 ```
 
 ### Model Token Limits

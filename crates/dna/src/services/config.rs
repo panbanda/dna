@@ -104,7 +104,7 @@ impl ConfigService {
         Ok(uri)
     }
 
-    /// Initialize with kinds from a template
+    /// Initialize with kinds and labels from a template
     pub fn init_from_template(&self, template: &super::Template) -> Result<ProjectConfig> {
         let mut config = if self.exists() {
             self.load()?
@@ -116,6 +116,12 @@ impl ConfigService {
             config
                 .kinds
                 .add(kind.slug.to_string(), kind.description.to_string());
+        }
+
+        for label in template.labels {
+            config
+                .labels
+                .add(label.key.to_string(), label.description.to_string());
         }
 
         self.save(&config)?;
@@ -142,6 +148,31 @@ impl ConfigService {
     pub fn remove_kind(&self, slug: &str) -> Result<bool> {
         let mut config = self.load()?;
         let removed = config.kinds.remove(slug);
+        if removed {
+            self.save(&config)?;
+        }
+        Ok(removed)
+    }
+
+    /// Add a label to the config.
+    ///
+    /// Validates the key before adding (same rules as kind slugs).
+    /// Returns Ok(false) if the label already exists.
+    pub fn add_label(&self, key: &str, description: &str) -> Result<bool> {
+        super::validate_kind_slug(key)?;
+
+        let mut config = self.load()?;
+        let added = config.labels.add(key.to_string(), description.to_string());
+        if added {
+            self.save(&config)?;
+        }
+        Ok(added)
+    }
+
+    /// Remove a label from the config
+    pub fn remove_label(&self, key: &str) -> Result<bool> {
+        let mut config = self.load()?;
+        let removed = config.labels.remove(key);
         if removed {
             self.save(&config)?;
         }

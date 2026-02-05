@@ -30,6 +30,13 @@ pub struct RegisteredKind {
     pub description: String,
 }
 
+/// A registered label key for validation during artifact creation.
+#[derive(Debug, Clone)]
+pub struct RegisteredLabel {
+    pub key: String,
+    pub description: String,
+}
+
 /// DNA MCP tool handler using rmcp SDK
 pub struct DnaToolHandler {
     artifact_service: Arc<ArtifactService>,
@@ -37,6 +44,7 @@ pub struct DnaToolHandler {
     include_tools: Option<Vec<String>>,
     exclude_tools: Option<Vec<String>>,
     registered_kinds: Vec<RegisteredKind>,
+    registered_labels: Vec<RegisteredLabel>,
 }
 
 impl Clone for DnaToolHandler {
@@ -47,6 +55,7 @@ impl Clone for DnaToolHandler {
             include_tools: self.include_tools.clone(),
             exclude_tools: self.exclude_tools.clone(),
             registered_kinds: self.registered_kinds.clone(),
+            registered_labels: self.registered_labels.clone(),
         }
     }
 }
@@ -68,10 +77,11 @@ impl DnaToolHandler {
             include_tools,
             exclude_tools,
             registered_kinds: Vec::new(),
+            registered_labels: Vec::new(),
         }
     }
 
-    /// Create a handler with registered kinds for dynamic tool generation
+    /// Create a handler with registered kinds and labels
     pub fn with_kinds(
         db: Arc<dyn Database>,
         embedding: Arc<dyn EmbeddingProvider>,
@@ -88,11 +98,40 @@ impl DnaToolHandler {
             include_tools,
             exclude_tools,
             registered_kinds: kinds,
+            registered_labels: Vec::new(),
         }
     }
 
+    /// Create a handler with registered kinds and labels
+    pub fn with_kinds_and_labels(
+        db: Arc<dyn Database>,
+        embedding: Arc<dyn EmbeddingProvider>,
+        include_tools: Option<Vec<String>>,
+        exclude_tools: Option<Vec<String>>,
+        kinds: Vec<RegisteredKind>,
+        labels: Vec<RegisteredLabel>,
+    ) -> Self {
+        let artifact_service = Arc::new(ArtifactService::new(db.clone(), embedding.clone()));
+        let search_service = Arc::new(SearchService::new(db, embedding));
+
+        Self {
+            artifact_service,
+            search_service,
+            include_tools,
+            exclude_tools,
+            registered_kinds: kinds,
+            registered_labels: labels,
+        }
+    }
+
+    /// Tools exempt from include/exclude filtering (always available)
+    const UNFILTERED_TOOLS: &[&str] = &["dna_context"];
+
     /// Check if a tool should be available based on filters
     fn is_tool_available(&self, tool_name: &str) -> bool {
+        if Self::UNFILTERED_TOOLS.contains(&tool_name) {
+            return true;
+        }
         if let Some(ref include) = self.include_tools {
             include.iter().any(|t| tool_name.contains(t))
         } else if let Some(ref exclude) = self.exclude_tools {
@@ -202,8 +241,90 @@ impl DnaToolHandler {
         })
     }
 
+    /// Validate metadata keys against registered labels.
+    /// Skips validation if no labels are registered.
+    fn validate_metadata_labels(
+        &self,
+        metadata: &HashMap<String, String>,
+    ) -> Result<(), ErrorData> {
+        if self.registered_labels.is_empty() {
+            return Ok(());
+        }
+        let unregistered: Vec<&str> = metadata
+            .keys()
+            .filter(|k| !self.registered_labels.iter().any(|l| l.key == **k))
+            .map(|k| k.as_str())
+            .collect();
+        if unregistered.is_empty() {
+            Ok(())
+        } else {
+            Err(ErrorData::invalid_params(
+                format!(
+                    "Unregistered label key(s): {}. Register with 'dna label add <key> <description>'.",
+                    unregistered.join(", ")
+                ),
+                None,
+            ))
+        }
+    }
+
+    /// Return the project truth schema (kinds, labels, artifact counts)
+    async fn dna_context(&self) -> Result<CallToolResult, ErrorData> {
+        let artifacts = self
+            .artifact_service
+            .list(SearchFilters::default())
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let mut counts: HashMap<String, usize> = HashMap::new();
+        for artifact in &artifacts {
+            *counts.entry(artifact.kind.clone()).or_default() += 1;
+        }
+
+        let kinds: Vec<serde_json::Value> = self
+            .registered_kinds
+            .iter()
+            .map(|k| {
+                serde_json::json!({
+                    "slug": k.slug,
+                    "description": k.description,
+                    "artifact_count": counts.get(&k.slug).unwrap_or(&0),
+                })
+            })
+            .collect();
+
+        let labels: Vec<serde_json::Value> = self
+            .registered_labels
+            .iter()
+            .map(|l| {
+                serde_json::json!({
+                    "key": l.key,
+                    "description": l.description,
+                })
+            })
+            .collect();
+
+        let output = serde_json::json!({
+            "kinds": kinds,
+            "labels": labels,
+            "total_artifacts": artifacts.len(),
+        });
+
+        let content = serde_json::to_string_pretty(&output)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        Ok(CallToolResult {
+            content: vec![Content::text(content)],
+            is_error: Some(false),
+            meta: None,
+            structured_content: None,
+        })
+    }
+
     /// Add new artifact
     async fn dna_add(&self, request: AddRequest) -> Result<CallToolResult, ErrorData> {
+        self.validate_metadata_labels(&request.metadata)?;
+
         let artifact = self
             .artifact_service
             .add(
@@ -230,6 +351,16 @@ impl DnaToolHandler {
 
     /// Modify existing artifact
     async fn dna_update(&self, request: UpdateRequest) -> Result<CallToolResult, ErrorData> {
+        if let Some(ref metadata) = request.metadata {
+            // Only validate keys being set, not removed (empty value = removal)
+            let non_empty: HashMap<String, String> = metadata
+                .iter()
+                .filter(|(_, v)| !v.is_empty())
+                .map(|(k, v)| (k.clone(), v.clone()))
+                .collect();
+            self.validate_metadata_labels(&non_empty)?;
+        }
+
         let artifact = self
             .artifact_service
             .update(
@@ -289,6 +420,8 @@ impl DnaToolHandler {
         kind: &str,
         request: KindAddRequest,
     ) -> Result<CallToolResult, ErrorData> {
+        self.validate_metadata_labels(&request.metadata)?;
+
         let artifact = self
             .artifact_service
             .add(
@@ -477,6 +610,19 @@ impl ServerHandler for DnaToolHandler {
                 icons: None,
                 meta: None,
             },
+            Tool {
+                name: "dna_context".into(),
+                description: Some(
+                    "Show project truth schema: registered kinds with artifact counts, registered labels"
+                        .into(),
+                ),
+                input_schema: schema_to_json!(ContextRequest),
+                title: None,
+                output_schema: None,
+                annotations: None,
+                icons: None,
+                meta: None,
+            },
         ];
 
         // Add kind-specific tools for each registered kind
@@ -588,6 +734,7 @@ impl ServerHandler for DnaToolHandler {
                     .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
                 self.dna_remove(request).await
             },
+            "dna_context" => self.dna_context().await,
             _ => {
                 // Check for kind-specific tools: dna_{kind_prefix}_{action}
                 let name_str: &str = name.as_ref();
@@ -693,6 +840,9 @@ struct UpdateRequest {
 struct RemoveRequest {
     id: String,
 }
+
+#[derive(Debug, Deserialize, JsonSchema)]
+struct ContextRequest {}
 
 // Kind-scoped request types (no kind field -- kind comes from tool name)
 

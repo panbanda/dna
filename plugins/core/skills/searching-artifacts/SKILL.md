@@ -38,8 +38,7 @@ When you want to browse rather than search:
 
 ```bash
 dna list --kind intent
-dna list --kind constraint --label area=auth
-dna list --label team=billing
+dna list --kind constraint --label domain=auth
 ```
 
 Listing does not use semantic similarity -- it returns all matching artifacts.

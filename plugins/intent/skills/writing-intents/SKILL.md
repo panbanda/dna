@@ -34,7 +34,7 @@ One intent = one decision. State the rule, then the reason.
 dna add intent \
   "Orders must not ship until payment is confirmed. Shipping unconfirmed orders caused $40K in losses in Q2 from chargebacks on fraudulent orders." \
   --name "Payment before shipment" \
-  --label area=orders
+  --label domain=orders
 ```
 
 The "because" makes this intent defensible. A future agent will not try to add an "express ship without payment" feature.
@@ -43,7 +43,7 @@ The "because" makes this intent defensible. A future agent will not try to add a
 dna add intent \
   "The billing system treats invoices as immutable after finalization. Corrections are modeled as new adjustment invoices that reference the original. Partial mutations caused reconciliation failures that took 2 weeks to untangle." \
   --name "Immutable invoices" \
-  --label area=billing
+  --label domain=billing
 ```
 
 This explains not just the rule but the cost of violating it.
@@ -52,7 +52,7 @@ This explains not just the rule but the cost of violating it.
 dna add intent \
   "Every user-facing error message must be actionable. It must tell the user what went wrong and what they can do about it. Generic error messages generate support tickets." \
   --name "Actionable error messages" \
-  --label area=ux
+  --label domain=ux
 ```
 
 **Bad:**
