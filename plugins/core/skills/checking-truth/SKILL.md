@@ -13,7 +13,7 @@ Before modifying code, check what truth governs this area.
 dna search "<what you are about to change>" --limit 5
 ```
 
-Review the results. If any artifact has a similarity score above 0.7, read it carefully. It likely governs what you are about to do.
+Review the results. If any artifact has a similarity score above 0.6, read it carefully. It likely governs what you are about to do.
 
 ## Targeted checks
 

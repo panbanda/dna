@@ -253,7 +253,7 @@ Grep: "constraint"
 
 Schema-level constraints are intentional data integrity rules.
 
-### 7. External sources
+### 8. External sources
 
 **Issue tracker**: Search for tickets about outages, performance incidents, security findings. Post-incident tickets often result in new constraints.
 
