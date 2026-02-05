@@ -80,6 +80,37 @@ Read the PR body, not just the diff.
 
 **Documentation tools**: Search for architecture docs, design docs, RFCs.
 
+### 6. Product capabilities
+
+The recon summary lists `product_capabilities` -- the major user-facing features of the system. Each capability likely has one or more intents behind it.
+
+For each capability identified in recon:
+- Search for documentation explaining why it was built
+- Search for tickets or PRs that introduced it
+- Look at the module/directory that implements it for comments explaining purpose
+- Check for non-goals -- what the capability intentionally does NOT do
+
+Product capability intents answer: "Why does this system have this feature? What problem does it solve? What user need does it serve?"
+
+These are among the highest-value intents because they describe the system's reason for existing.
+
+### 7. Enterprise and custom requirements
+
+Search for patterns that indicate customer-specific or tier-specific behavior:
+
+```
+Grep: "enterprise"
+Grep: "premium"
+Grep: "plan"
+Grep: "tier"
+Grep: "custom"
+Grep: "white.?label"
+Grep: "tenant"
+Grep: "org"
+```
+
+Also look for conditional behavior based on account type, subscription level, or customer configuration. These encode business decisions about product differentiation.
+
 ## Debt signals for intents
 
 Classify as **debt**, not truth, when:

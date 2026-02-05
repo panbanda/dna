@@ -115,6 +115,29 @@ Classify as **ambiguous** when:
 - The calculation works but the order of operations seems arbitrary
 - No tests verify the computation
 
+### 6. Policy evaluation logic
+
+Authorization and permission systems often contain algorithms -- the logic that resolves whether an action is allowed:
+
+```
+Grep: "resolve"
+Grep: "evaluate"
+Grep: "inherit"
+Grep: "override"
+Grep: "priority"
+Grep: "deny"
+Grep: "allow"
+Grep: "policy"
+```
+
+Look for:
+- **Role hierarchy resolution**: How role inheritance works (does admin inherit editor permissions? explicitly or implicitly?)
+- **Policy combination**: When multiple policies apply, which wins? (deny-overrides, permit-overrides, first-match)
+- **Attribute evaluation**: How conditions on user/resource/environment attributes are combined
+- **Scope narrowing**: How broad permissions are narrowed to specific resources
+
+These are algorithms because they define computation logic with specific rules about precedence, combination, and resolution. Extract the rules, not the implementation.
+
 ## Writing algorithm candidates
 
 Describe the logic, not the code:

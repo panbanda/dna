@@ -44,7 +44,20 @@ Glob: **/README.md, **/CLAUDE.md, **/CONTRIBUTING.md
 Glob: **/docs/**/*.md, **/adr/**/*.md, **/decisions/**/*.md
 ```
 
-#### 1b. Detect external data sources
+#### 1b. Identify product capabilities
+
+Before spawning agents, identify the system's major product capabilities. These are the user-facing features that justify the system's existence. Look for:
+
+- **Route groups**: Related endpoints often map to a capability (e.g., `/billing/*` = billing feature)
+- **Module/directory structure**: Top-level directories or modules named after domain concepts (e.g., `teams/`, `notifications/`, `reporting/`)
+- **README/docs**: Sections describing what the product does, feature lists, product overviews
+- **Test suite organization**: Test directories or files grouped by feature area
+- **CLI commands**: Each command is a capability
+- **Navigation/menus**: Frontend routing or menu definitions enumerate user-facing features
+
+Record these as `product_capabilities` in the recon summary. Each capability is a starting point for intent discovery (why does this capability exist?) and contract discovery (what does it promise?).
+
+#### 1c. Detect external data sources
 
 Ask the user which external sources are available. Probe for MCP tools:
 
@@ -58,7 +71,7 @@ For each available source, note the MCP tool name and access scope. Discovery ag
 
 Not all sources need to be available. Code-only discovery works, but external sources add significant depth, especially for intents (the WHY behind decisions).
 
-#### 1c. Write the recon summary
+#### 1d. Write the recon summary
 
 Create staging directory and write to `.dna/discovery/recon.json`:
 
@@ -73,6 +86,11 @@ Create staging directory and write to `.dna/discovery/recon.json`:
   "entry_points": ["src/main.rs", "src/routes/mod.rs"],
   "ci_config": [".github/workflows/ci.yml"],
   "config_files": ["config.toml", ".env.example"],
+  "product_capabilities": [
+    "artifact storage and retrieval",
+    "semantic search across artifacts",
+    "template-based project initialization"
+  ],
   "external_sources": {
     "issues": {"available": true, "tool": "mcp__linear__list_issues", "scope": "project X"},
     "docs": {"available": true, "tool": "mcp__notion__search", "scope": "engineering workspace"},
@@ -82,6 +100,41 @@ Create staging directory and write to `.dna/discovery/recon.json`:
   }
 }
 ```
+
+### Agent guidelines
+
+Every discovery agent must follow these rules.
+
+#### Adaptive searching
+
+Each agent's instructions include conceptual search patterns (e.g., "validate", "route", "permission"). These are starting points, not ceilings. After reading the recon summary, agents should adapt:
+
+- Use the detected language and framework to search for idiomatic patterns. If recon says Python/Django, search for `permissions.py`, `admin.py`, `signals.py`. If recon says Rust/Axum, search for extractors, tower middleware, derives.
+- Use what you find to guide further search. If you discover a `policies/` directory, search within it. If you find an authorization library in the dependencies, search for its API usage.
+- Search broadly first, then narrow. Start with the conceptual patterns, read what you find, and let the code tell you where to look next.
+
+#### Language-agnostic output
+
+Artifacts produced by discovery agents must be implementation-agnostic. The candidate `content` field must:
+
+- Never reference a programming language, framework, or library by name
+- Never include code syntax, function signatures, or type declarations
+- Describe WHAT and WHY, not HOW
+- Survive a complete rewrite in a different language
+
+The `source` field exists to trace provenance back to specific code. The `content` field describes the truth that transcends that code.
+
+Test: if the content contains a framework name, a language keyword, or a function name, rewrite it to describe the concept instead.
+
+#### Progress tracking
+
+Each agent must maintain a structured progress list to avoid losing track during long searches. Before starting, outline the areas to search. As you search, record:
+
+- What you searched and where
+- What you found (even if not a candidate)
+- What you still need to search
+
+This prevents the agent from re-searching areas it already covered or forgetting areas it planned to cover.
 
 ### Phase 2: Discovery (Spawn All Agents in Parallel)
 

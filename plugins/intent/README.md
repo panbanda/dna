@@ -25,9 +25,9 @@ RECON ──> DISCOVER ──> JUDGE ──> STORE ──> SUMMARY
              parallel
 ```
 
-**Phase 1 -- Reconnaissance**: A single agent maps the project structure (languages, frameworks, entry points, docs, API specs) and detects available external data sources (issue trackers, documentation tools, PR history, monitoring). Writes `.dna/discovery/recon.json`.
+**Phase 1 -- Reconnaissance**: A single agent maps the project structure (languages, frameworks, entry points, docs, API specs), identifies product capabilities (major user-facing features), and detects available external data sources (issue trackers, documentation tools, PR history, monitoring). Writes `.dna/discovery/recon.json`.
 
-**Phase 2 -- Discovery**: 11 agents run in parallel, one per artifact kind. Each reads the recon summary, explores the codebase, and optionally queries external sources via MCP tools. Each writes candidates to `.dna/discovery/<kind>.json`.
+**Phase 2 -- Discovery**: 11 agents run in parallel, one per artifact kind. Each reads the recon summary, adapts its search patterns to the detected language and framework, explores the codebase, and optionally queries external sources via MCP tools. Each writes candidates to `.dna/discovery/<kind>.json`. All candidate content must be language-agnostic -- no framework names, no code syntax, no implementation details.
 
 **Phase 3 -- Truth Judgment**: A single judge agent reads all candidates and applies cross-cutting analysis. Produces three output files separating truth from debt from ambiguity.
 
@@ -41,7 +41,7 @@ Each agent focuses on one artifact kind and knows where evidence hides for that 
 
 | Agent | Kind | Primary sources | What it looks for |
 |-------|------|-----------------|-------------------|
-| intent-discoverer | intent | ADRs, code comments, git history, PR descriptions | WHY decisions were made. Comments with "because", "to prevent", "by design". |
+| intent-discoverer | intent | ADRs, code comments, git history, PR descriptions, product capabilities | WHY decisions were made. Product features and their purpose. Enterprise/tier requirements. |
 | contract-discoverer | contract | API routes, OpenAPI specs, public types, event schemas | Component BOUNDARIES. What is promised vs. what happens to exist. |
 | constraint-discoverer | constraint | Validation logic, middleware, config limits, error handlers | Hard LIMITS. What the system rejects reveals what it considers unacceptable. |
 | algorithm-discoverer | algorithm | Business logic, pricing, scoring, domain arithmetic | Computation LOGIC. Functions with domain variable names, not generic CRUD. |

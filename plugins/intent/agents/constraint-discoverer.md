@@ -90,7 +90,158 @@ Glob: **/k8s/**
 
 Infrastructure imposes constraints: memory limits, CPU limits, timeout limits, deployment strategies. These constrain what the application code can do.
 
-### 6. Database schema constraints
+### 6. Authorization and permission model
+
+Authorization is a cross-cutting constraint system. Discover the model, not just individual checks.
+
+#### Identify the model type
+
+```
+Grep: "role"
+Grep: "permission"
+Grep: "policy"
+Grep: "scope"
+Grep: "claim"
+Grep: "grant"
+Grep: "capability"
+Grep: "privilege"
+Grep: "entitlement"
+Grep: "tenant"
+Grep: "org"
+Grep: "team"
+Grep: "owner"
+Grep: "member"
+```
+
+Determine which model the system uses:
+
+| Pattern | Model | Signals |
+|---------|-------|---------|
+| Users have roles, roles have permissions | RBAC | `role`, `has_role`, `role_permissions`, role hierarchy tables |
+| Decisions based on user/resource/env attributes | ABAC | `attribute`, `condition`, `policy_engine`, attribute matchers |
+| Relationships between users and objects | ReBAC / FGA | `relation`, `tuple`, `check`, `expand`, object-relation-user triples |
+| Explicit allow/deny lists per resource | ACL | `access_list`, `acl`, `allowed_users`, per-resource permission entries |
+| Bearer tokens with scoped capabilities | Capability / OAuth scopes | `scope`, `bearer`, `token.scopes`, `required_scopes` |
+
+Many systems combine models (e.g., RBAC for coarse access + ABAC for row-level filtering).
+
+#### Find the permission boundaries
+
+```
+Grep: "admin"
+Grep: "super.?admin"
+Grep: "sudo"
+Grep: "bypass"
+Grep: "override"
+Grep: "escalat"
+Grep: "impersonat"
+```
+
+Look for operations that are restricted even for administrators. These are the hardest constraints in the system:
+- "Even admins cannot view raw payment card data"
+- "Impersonation requires audit log entry and expires after 1 hour"
+- "No role can bypass the deletion cooldown period"
+
+#### Find tenant isolation
+
+```
+Grep: "tenant"
+Grep: "org.?id"
+Grep: "organization"
+Grep: "workspace"
+Grep: "team.?id"
+Grep: "WHERE.*tenant"
+Grep: "row.?level"
+Grep: "RLS"
+```
+
+Multi-tenancy constraints are critical. Determine:
+- Where is tenant isolation enforced? (middleware, database, both?)
+- Can any operation cross tenant boundaries?
+- How are shared/global resources handled?
+
+#### Find permission check patterns
+
+```
+Grep: "authorize"
+Grep: "has_permission"
+Grep: "check_access"
+Grep: "guard"
+Grep: "protect"
+Grep: "require_permission"
+Grep: "permission"
+Grep: "allowed"
+```
+
+Adapt based on the language and framework detected in recon. Search for the idiomatic authorization check patterns used by whatever framework is in play.
+
+Look for WHERE permission checks happen:
+- Middleware/decorator level (uniform enforcement)
+- Inside handler logic (case-by-case, harder to audit)
+- Database query level (row-level security)
+- Frontend only (debt -- backend must enforce)
+
+#### Look for FGA/Zanzibar patterns
+
+```
+Grep: "openfga"
+Grep: "zanzibar"
+Grep: "spicedb"
+Grep: "ory.?keto"
+Grep: "cerbos"
+Grep: "cedar"
+Grep: "oso"
+Grep: "casbin"
+Grep: "rego"
+Grep: "authz"
+Glob: **/*.polar
+Glob: **/*.cedar
+Glob: **/*.rego
+Glob: **/policy/**
+Glob: **/policies/**
+Glob: **/authorization/**
+Glob: **/permissions/**
+```
+
+If an FGA or policy engine is used, the authorization model and policy definitions are high-value artifacts. Extract:
+- The type/relation definitions (the authorization model schema)
+- Key policy rules and their intent
+- The relationship between the policy model and the domain model
+
+#### Write authorization constraint candidates
+
+Authorization constraints should capture the MODEL and the BOUNDARIES, not individual permission checks:
+
+```
+# Candidate:
+name: "Tenant data isolation"
+content: "Every database query must be scoped to the requesting user's
+tenant. Tenant isolation is enforced at the database level via row-level
+security policies, not in application code. No API endpoint may return
+data belonging to a different tenant. Cross-tenant operations are
+impossible by design -- there is no admin bypass for tenant boundaries."
+classification: truth
+confidence: high
+reasoning: "RLS policies on all tables. Middleware injects tenant_id.
+Integration tests verify cross-tenant access returns empty results."
+```
+
+```
+# Candidate:
+name: "Permission model"
+content: "Authorization uses role-based access control with four roles:
+viewer (read-only), editor (read-write own resources), admin
+(read-write all resources in org), owner (admin + billing + member
+management). Role hierarchy: owner > admin > editor > viewer.
+Permissions are checked at the API middleware layer, never in
+frontend only."
+classification: truth
+confidence: high
+reasoning: "Role enum with four variants. Middleware checks on all
+routes. Tests verify each role's boundaries."
+```
+
+### 7. Database schema constraints
 
 ```
 Grep: "NOT NULL"

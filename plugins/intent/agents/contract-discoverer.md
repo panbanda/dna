@@ -43,17 +43,20 @@ Look for middleware chains -- they reveal cross-cutting contracts (auth required
 
 ### 3. Public type exports
 
-Look for types, traits, or interfaces that define the public API of a module:
+Find the types that define module boundaries. Look at directories the recon identified as source code:
 
 ```
-Grep: "pub trait"    (Rust)
-Grep: "pub struct"   (Rust, but filter for public API types)
-Grep: "export interface"  (TypeScript)
-Grep: "export type"       (TypeScript)
-Grep: "type.*interface"   (Go)
+Glob: **/models/**
+Glob: **/types/**
+Glob: **/schemas/**
+Glob: **/domain/**
+Glob: **/entities/**
+Glob: **/api/**
 ```
 
-Public types that appear in function signatures of public functions are likely part of a contract.
+Read source files in the API layer. Types that appear in the signatures of public-facing functions are likely part of a contract. Internal implementation types (helpers, intermediate representations) are not.
+
+Use the language detected in recon to search for public type definitions appropriately. The goal is to find the boundary types, not catalog every struct or class.
 
 ### 4. Event/message schemas
 
@@ -69,7 +72,30 @@ Grep: "emit"
 
 Event schemas define asynchronous contracts. Extract: the event name, what it carries, and what guarantees exist (at-least-once, ordering, etc.).
 
-### 5. External sources
+### 5. Product capability boundaries
+
+The recon summary lists `product_capabilities`. Each capability may have contracts -- promises to users about what the feature does and does not do.
+
+For each capability:
+- What does it guarantee to the user?
+- What error states does it handle?
+- What are its limits (size, rate, scope)?
+- What does it explicitly NOT promise? (Non-goals are negative contracts.)
+
+Also look for tier-differentiated capabilities:
+
+```
+Grep: "enterprise"
+Grep: "premium"
+Grep: "plan"
+Grep: "tier"
+Grep: "limit"
+Grep: "quota"
+```
+
+If the system offers different capabilities at different tiers, each tier boundary is a contract.
+
+### 6. External sources
 
 **API documentation**: Confluence/Notion pages titled "API", "Integration Guide", "Developer Guide".
 

@@ -11,15 +11,20 @@ Find terms that have domain-specific meaning. The goal is to capture terms where
 
 ### 1. Domain model types
 
+Find domain model definitions. The recon summary identifies the source directories -- focus on models, domain, and entity directories:
+
 ```
-Grep: "struct.*\{"    (Rust)
-Grep: "class "         (Python, Java, TypeScript)
-Grep: "interface "     (TypeScript, Go)
-Grep: "enum "
-Grep: "type "
+Glob: **/models/**
+Glob: **/domain/**
+Glob: **/entities/**
+Glob: **/types/**
+Grep: "enum"
+Grep: "model"
+Grep: "entity"
+Grep: "status"
 ```
 
-Focus on types in domain-logic directories (not utilities, not framework types). Each type name is a term. Ask: would someone new to this codebase understand what this type represents?
+Use the language detected in recon to search for type definitions appropriately. Focus on domain-logic directories (not utilities, not framework types). Each type name is a term. Ask: would someone new to this codebase understand what this type represents?
 
 ### 2. Enum variants
 
@@ -50,7 +55,27 @@ Grep: "account" -- Does it mean user account, billing account, or organization?
 Grep: "project" -- Is this consistent across the codebase?
 ```
 
-### 5. External sources
+### 5. Authorization and permission terminology
+
+Authorization systems often introduce domain-specific vocabulary that is used inconsistently:
+
+```
+Grep: "role"
+Grep: "permission"
+Grep: "scope"
+Grep: "claim"
+Grep: "grant"
+Grep: "privilege"
+Grep: "entitlement"
+```
+
+Look for terms where the codebase's usage differs from common understanding:
+- "role" vs. "permission" vs. "scope" -- are these used consistently?
+- "admin" -- does it mean the same thing everywhere? (org admin vs. system admin vs. super admin)
+- "owner" -- owner of what? (resource owner vs. account owner vs. org owner)
+- "member" vs. "user" vs. "account" in authorization context
+
+### 6. External sources
 
 **Documentation**: Onboarding docs and domain model descriptions.
 
