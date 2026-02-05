@@ -27,5 +27,6 @@ jobs:
       - name: Run Omen analysis
         uses: panbanda/omen@v4
         with:
+          version: '4.21.0'
           comment: 'true'
           label: 'true'
