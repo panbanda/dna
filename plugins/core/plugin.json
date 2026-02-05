@@ -1,0 +1,17 @@
+{
+  "name": "dna-core",
+  "description": "Core skills for planning with truth, capturing artifacts, searching the store, and validating changes against system identity",
+  "version": "0.1.0",
+  "author": {
+    "name": "Panbanda"
+  },
+  "homepage": "https://github.com/panbanda/dna",
+  "repository": "https://github.com/panbanda/dna",
+  "license": "Apache-2.0",
+  "keywords": [
+    "truth-artifacts",
+    "system-identity",
+    "planning",
+    "governance"
+  ]
+}

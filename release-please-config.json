@@ -21,6 +21,47 @@
           "jsonpath": "$.workspace.dependencies.dna.version"
         }
       ]
+    },
+    "plugins/core": {
+      "release-type": "simple",
+      "component": "dna-core-skills",
+      "package-name": "dna-core-skills",
+      "include-component-in-tag": true,
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "plugin.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    },
+    "plugins/intent": {
+      "release-type": "simple",
+      "component": "dna-intent-skills",
+      "package-name": "dna-intent-skills",
+      "include-component-in-tag": true,
+      "include-v-in-tag": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "plugin.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    },
+    ".claude-plugin": {
+      "release-type": "simple",
+      "component": "dna-marketplace",
+      "package-name": "dna-marketplace",
+      "skip-github-release": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "marketplace.json",
+          "jsonpath": "$.metadata.version"
+        }
+      ]
     }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "name": "dna",
+  "owner": {
+    "name": "Panbanda"
+  },
+  "metadata": {
+    "description": "Truth artifact management skills for DNA",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "dna-core",
+      "source": "./plugins/core",
+      "description": "Core skills for planning with truth, capturing artifacts, searching the store, and validating changes against system identity"
+    },
+    {
+      "name": "dna-intent",
+      "source": "./plugins/intent",
+      "description": "Intent template skills for writing intents, contracts, constraints, algorithms, and evaluations with correct structure and specificity"
+    }
+  ]
+}
