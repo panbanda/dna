@@ -285,8 +285,12 @@ State the limit, the scope, and the reason:
 # Candidate:
 name: "API rate limiting"
 content: "All API endpoints are rate-limited to 100 requests per minute
-per authenticated user. This exists to prevent abuse and to stay within
-the database connection pool limit of 20 connections."
+per authenticated user. This prevents abuse and protects the database
+connection pool from exhaustion."
+context: "The 100/min limit was chosen to stay within the connection
+pool limit of 20 connections (documented in config comments). Rate
+limiting was added after a scraping incident in March 2023 that
+saturated the connection pool and caused a 45-minute outage."
 classification: truth
 confidence: high
 reasoning: "Applied uniformly via middleware. The connection pool

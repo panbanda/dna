@@ -93,10 +93,10 @@ Every discovery agent writes candidates in this format:
   "candidates": [
     {
       "name": "Short descriptive name",
-      "content": "The artifact content, written to survive a rewrite",
+      "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
       "labels": {"area": "billing"},
-      "context": "Additional semantic context for search",
+      "context": "Why it was made, what drove the decision, supporting evidence",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
         "location": "file:line, URL, or ticket ID",
@@ -110,7 +110,7 @@ Every discovery agent writes candidates in this format:
 }
 ```
 
-The `source` field traces provenance. The `classification` field is the agent's judgment, subject to override by the truth judge. The `reasoning` field explains the classification so the judge (and the human reviewer) can evaluate it.
+The `content` field is the truth itself -- language-agnostic, no implementation details. The `context` field captures the backstory: why it was made, what drove the decision, related tickets or incidents, alternatives considered. Context is stored in DNA's vector index and improves semantic search. The `source` field traces provenance to specific code, docs, or tickets. The `classification` and `reasoning` fields are the agent's judgment, subject to override by the truth judge.
 
 ### Classification criteria
 

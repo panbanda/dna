@@ -137,8 +137,11 @@ Strip implementation details. Keep only the decision and the reason:
 name: "Event sourcing for order state"
 content: "Order state changes are modeled as an append-only event log,
 not as in-place mutations. This prevents data loss during partial
-failures, which caused an outage in January 2024 when concurrent
-updates corrupted order records."
+failures when concurrent updates target the same order."
+context: "Introduced after the January 2024 outage where concurrent
+updates corrupted order records. The incident report (ticket #1847)
+recommended event sourcing as the fix. ADR-012 documents the decision
+and rejected alternatives (optimistic locking, queue-based writes)."
 classification: truth
 confidence: high
 reasoning: "Explicit comment with historical context. Pattern is

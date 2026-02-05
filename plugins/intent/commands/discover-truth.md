@@ -126,6 +126,21 @@ The `source` field exists to trace provenance back to specific code. The `conten
 
 Test: if the content contains a framework name, a language keyword, or a function name, rewrite it to describe the concept instead.
 
+#### Capturing context
+
+The `context` field is where provenance and backstory go. While `content` is the truth itself and `source` is where you found it, `context` captures WHY it was made and what supports it. This is what helps a future reader (or agent) understand the artifact's origins.
+
+Good context includes:
+- The incident, ticket, or customer request that drove the decision
+- Alternatives that were considered and why they were rejected
+- Related decisions or artifacts that this one depends on or supports
+- Business or regulatory drivers ("required by SOC2 audit finding #47")
+- Timeline context ("introduced after the January 2024 outage")
+
+If the agent finds a PR description, commit message, ticket body, ADR, or comment that explains the reasoning behind a truth, capture that in context. If nothing is found, say so -- "No documentation found explaining the reasoning; inferred from code patterns" is honest context.
+
+The context field is stored in DNA's vector index and used for semantic search. Rich context means better search results.
+
 #### Progress tracking
 
 Each agent must maintain a structured progress list to avoid losing track during long searches. Before starting, outline the areas to search. As you search, record:
@@ -148,10 +163,10 @@ Each agent writes its output to `.dna/discovery/<kind>.json` with this schema:
   "candidates": [
     {
       "name": "Short descriptive name",
-      "content": "The artifact content, written to survive a rewrite",
+      "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
       "labels": {"area": "billing"},
-      "context": "Additional semantic context for search",
+      "context": "Why it was made, what drove the decision, supporting evidence",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
         "location": "file:line, URL, or ticket ID",
