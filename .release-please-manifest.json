@@ -1,3 +1,6 @@
 {
-  ".": "0.3.3"
+  ".": "0.3.3",
+  "plugins/core": "0.1.0",
+  "plugins/intent": "0.1.0",
+  ".claude-plugin": "0.1.0"
 }
