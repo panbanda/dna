@@ -96,7 +96,7 @@ Every discovery agent writes candidates in this format:
       "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
       "labels": {"area": "billing"},
-      "context": "Why it was made, what drove the decision, supporting evidence",
+      "context": "Domain concepts, related areas, brief provenance -- embedded for graph-like search",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
         "location": "file:line, URL, or ticket ID",
@@ -110,7 +110,7 @@ Every discovery agent writes candidates in this format:
 }
 ```
 
-The `content` field is the truth itself -- language-agnostic, no implementation details. The `context` field captures the backstory: why it was made, what drove the decision, related tickets or incidents, alternatives considered. Context is stored in DNA's vector index and improves semantic search. The `source` field traces provenance to specific code, docs, or tickets. The `classification` and `reasoning` fields are the agent's judgment, subject to override by the truth judge.
+The `content` field is the truth itself -- language-agnostic, no implementation details. The `context` field is semantic glue: domain concepts, related areas, and brief provenance that get embedded alongside content. Related artifacts with overlapping context cluster together in search, creating graph-like connections across kinds. The `source` field traces provenance to specific code, docs, or tickets. The `classification` and `reasoning` fields are the agent's judgment, subject to override by the truth judge.
 
 ### Classification criteria
 

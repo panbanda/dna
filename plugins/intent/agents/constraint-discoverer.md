@@ -287,10 +287,9 @@ name: "API rate limiting"
 content: "All API endpoints are rate-limited to 100 requests per minute
 per authenticated user. This prevents abuse and protects the database
 connection pool from exhaustion."
-context: "The 100/min limit was chosen to stay within the connection
-pool limit of 20 connections (documented in config comments). Rate
-limiting was added after a scraping incident in March 2023 that
-saturated the connection pool and caused a 45-minute outage."
+context: "API throttling, abuse prevention, connection pool protection,
+per-user limits -- added after March 2023 scraping incident that
+exhausted the connection pool"
 classification: truth
 confidence: high
 reasoning: "Applied uniformly via middleware. The connection pool

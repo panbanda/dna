@@ -128,18 +128,18 @@ Test: if the content contains a framework name, a language keyword, or a functio
 
 #### Capturing context
 
-The `context` field is where provenance and backstory go. While `content` is the truth itself and `source` is where you found it, `context` captures WHY it was made and what supports it. This is what helps a future reader (or agent) understand the artifact's origins.
+The `context` field is embedded alongside `content` in DNA's vector index. It acts as semantic glue -- related artifacts with overlapping context cluster together in search, creating implicit graph-like connections across kinds.
 
-Good context includes:
-- The incident, ticket, or customer request that drove the decision
-- Alternatives that were considered and why they were rejected
-- Related decisions or artifacts that this one depends on or supports
-- Business or regulatory drivers ("required by SOC2 audit finding #47")
-- Timeline context ("introduced after the January 2024 outage")
+Context should include:
+- **Domain concepts and terms** that connect this artifact to related artifacts ("order management, payment processing, transaction integrity")
+- **Related areas and capabilities** so cross-kind queries work ("billing, subscriptions, invoicing" on both an intent about pricing and a constraint about currency precision)
+- **Brief provenance** when known -- what drove the decision, what incident or requirement led to it
+- **Related artifact names** if the agent discovers connections ("relates to: API rate limiting constraint, database connection pool constraint")
 
-If the agent finds a PR description, commit message, ticket body, ADR, or comment that explains the reasoning behind a truth, capture that in context. If nothing is found, say so -- "No documentation found explaining the reasoning; inferred from code patterns" is honest context.
+The goal: when someone searches DNA for "order processing," every artifact about orders -- intents, contracts, constraints, algorithms, evaluations -- should surface because their context fields share the same semantic neighborhood.
 
-The context field is stored in DNA's vector index and used for semantic search. Rich context means better search results.
+Bad context: empty, or just restating the content.
+Good context: "order lifecycle, state transitions, data integrity, event sourcing, payment processing -- introduced after concurrent update incident, relates to append-only mutation constraint and order state machine algorithm"
 
 #### Progress tracking
 
@@ -166,7 +166,7 @@ Each agent writes its output to `.dna/discovery/<kind>.json` with this schema:
       "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
       "labels": {"area": "billing"},
-      "context": "Why it was made, what drove the decision, supporting evidence",
+      "context": "Domain concepts, related areas, brief provenance -- embedded for graph-like search",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
         "location": "file:line, URL, or ticket ID",
