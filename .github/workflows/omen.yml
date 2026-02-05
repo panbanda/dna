@@ -25,7 +25,7 @@ jobs:
           fetch-depth: 0
 
       - name: Run Omen analysis
-        uses: panbanda/omen@v1
+        uses: panbanda/omen@v4
         with:
           comment: 'true'
           label: 'true'
