@@ -358,6 +358,53 @@ pub struct KindDefinition {
     pub description: String,
 }
 
+/// Definition of a registered label key
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LabelDefinition {
+    pub key: String,
+    pub description: String,
+}
+
+/// Configuration for registered label keys
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct LabelsConfig {
+    #[serde(default)]
+    pub definitions: Vec<LabelDefinition>,
+}
+
+impl LabelsConfig {
+    /// Check if a label key is registered
+    pub fn has(&self, key: &str) -> bool {
+        self.definitions.iter().any(|d| d.key == key)
+    }
+
+    /// Add a label definition, returning false if already exists
+    pub fn add(&mut self, key: String, description: String) -> bool {
+        if self.has(&key) {
+            return false;
+        }
+        self.definitions.push(LabelDefinition { key, description });
+        true
+    }
+
+    /// Remove a label definition, returning true if it existed
+    pub fn remove(&mut self, key: &str) -> bool {
+        let len = self.definitions.len();
+        self.definitions.retain(|d| d.key != key);
+        self.definitions.len() < len
+    }
+
+    /// Get a label definition by key
+    pub fn get(&self, key: &str) -> Option<&LabelDefinition> {
+        self.definitions.iter().find(|d| d.key == key)
+    }
+
+    /// List all registered label keys
+    pub fn keys(&self) -> Vec<&str> {
+        self.definitions.iter().map(|d| d.key.as_str()).collect()
+    }
+}
+
 /// Configuration for registered artifact kinds
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct KindsConfig {
@@ -406,6 +453,8 @@ pub struct ProjectConfig {
     pub storage: StorageConfig,
     #[serde(default)]
     pub kinds: KindsConfig,
+    #[serde(default)]
+    pub labels: LabelsConfig,
 }
 
 /// A kind definition within a template
@@ -415,18 +464,119 @@ pub struct TemplateKind {
     pub description: &'static str,
 }
 
-/// A project template defining a set of artifact kinds
+/// A label definition within a template
+#[derive(Debug, Clone)]
+pub struct TemplateLabel {
+    pub key: &'static str,
+    pub description: &'static str,
+}
+
+/// A project template defining a set of artifact kinds and labels
 #[derive(Debug, Clone)]
 pub struct Template {
     pub name: &'static str,
     pub description: &'static str,
     pub kinds: &'static [TemplateKind],
+    pub labels: &'static [TemplateLabel],
 }
+
+/// Intent template label definitions
+static INTENT_LABELS: &[TemplateLabel] = &[
+    TemplateLabel {
+        key: "domain",
+        description: "Business domain area (auth, billing, orders, etc.)",
+    },
+    TemplateLabel {
+        key: "type",
+        description: "Subcategory within a kind (invariant, scenario, regression, etc.)",
+    },
+    TemplateLabel {
+        key: "provider",
+        description: "External dependency name (stripe, sendgrid, etc.)",
+    },
+    TemplateLabel {
+        key: "regulation",
+        description: "Regulatory framework (gdpr, hipaa, pci-dss, soc2)",
+    },
+    TemplateLabel {
+        key: "priority",
+        description: "Priority level (high, medium, low)",
+    },
+    TemplateLabel {
+        key: "direction",
+        description: "System boundary direction (inbound, outbound)",
+    },
+    TemplateLabel {
+        key: "audience",
+        description: "Who consumes this (board, executive, support, engineering)",
+    },
+    TemplateLabel {
+        key: "layer",
+        description: "Change velocity layer (fast, medium, slow)",
+    },
+    TemplateLabel {
+        key: "client",
+        description: "Client or consumer identity",
+    },
+    TemplateLabel {
+        key: "version",
+        description: "API or contract version",
+    },
+    TemplateLabel {
+        key: "contract",
+        description: "Business agreement or SLA name",
+    },
+    TemplateLabel {
+        key: "source",
+        description: "Origin of truth (discovery, extraction, interview, etc.)",
+    },
+    TemplateLabel {
+        key: "confidence",
+        description: "Confidence level (high, medium, low)",
+    },
+];
+
+/// Agentic template label definitions
+static AGENTIC_LABELS: &[TemplateLabel] = &[
+    TemplateLabel {
+        key: "domain",
+        description: "Business domain area",
+    },
+    TemplateLabel {
+        key: "type",
+        description: "Subcategory within a kind (filter, policy, redline, safety, etc.)",
+    },
+    TemplateLabel {
+        key: "aspect",
+        description: "Behavioral facet (capability, grounding, agency, tone, oversight, etc.)",
+    },
+    TemplateLabel {
+        key: "owasp",
+        description: "OWASP LLM Top 10 identifier (LLM01-LLM10)",
+    },
+    TemplateLabel {
+        key: "severity",
+        description: "Impact level if violated (critical, high, medium, low)",
+    },
+    TemplateLabel {
+        key: "regulation",
+        description: "Regulatory framework (eu-ai-act, gdpr, etc.)",
+    },
+    TemplateLabel {
+        key: "framework",
+        description: "Compliance framework (nist-ai-rmf, iso-42001, etc.)",
+    },
+    TemplateLabel {
+        key: "risk",
+        description: "Risk classification level (critical, high, medium, low)",
+    },
+];
 
 /// Intent template: truth-driven governance based on intent-starter pattern
 pub static TEMPLATE_INTENT: Template = Template {
     name: "intent",
     description: "Truth-driven governance for system identity",
+    labels: INTENT_LABELS,
     kinds: &[
         TemplateKind {
             slug: "intent",
@@ -479,6 +629,7 @@ pub static TEMPLATE_INTENT: Template = Template {
 pub static TEMPLATE_AGENTIC: Template = Template {
     name: "agentic",
     description: "Safety and governance for AI agents and LLM systems",
+    labels: AGENTIC_LABELS,
     kinds: &[
         TemplateKind {
             slug: "behavior",
@@ -1184,6 +1335,119 @@ mod tests {
                     );
                 }
             }
+        }
+
+        #[test]
+        fn all_template_label_keys_are_valid() {
+            for name in list_templates() {
+                let template = get_template(name).unwrap();
+                for label in template.labels {
+                    assert!(
+                        validate_kind_slug(label.key).is_ok(),
+                        "{}:{} has invalid label key",
+                        name,
+                        label.key
+                    );
+                    assert!(
+                        !label.description.is_empty(),
+                        "{}:{} has empty label description",
+                        name,
+                        label.key
+                    );
+                }
+            }
+        }
+
+        #[test]
+        fn intent_template_has_expected_labels() {
+            let template = get_template("intent").unwrap();
+            let keys: Vec<&str> = template.labels.iter().map(|l| l.key).collect();
+            assert!(keys.contains(&"domain"));
+            assert!(keys.contains(&"type"));
+            assert!(keys.contains(&"provider"));
+            assert!(keys.contains(&"regulation"));
+            assert!(keys.contains(&"source"));
+            assert!(keys.contains(&"confidence"));
+            assert_eq!(keys.len(), 13);
+        }
+
+        #[test]
+        fn agentic_template_has_expected_labels() {
+            let template = get_template("agentic").unwrap();
+            let keys: Vec<&str> = template.labels.iter().map(|l| l.key).collect();
+            assert!(keys.contains(&"domain"));
+            assert!(keys.contains(&"type"));
+            assert!(keys.contains(&"aspect"));
+            assert!(keys.contains(&"owasp"));
+            assert!(keys.contains(&"severity"));
+            assert!(keys.contains(&"framework"));
+            assert!(keys.contains(&"risk"));
+            assert_eq!(keys.len(), 8);
+        }
+    }
+
+    mod labels_config {
+        use super::*;
+
+        #[test]
+        fn default_is_empty() {
+            let config = LabelsConfig::default();
+            assert!(config.definitions.is_empty());
+            assert!(config.keys().is_empty());
+        }
+
+        #[test]
+        fn add_returns_true_for_new_key() {
+            let mut config = LabelsConfig::default();
+            assert!(config.add("domain".to_string(), "Business domain".to_string()));
+            assert!(config.has("domain"));
+        }
+
+        #[test]
+        fn add_returns_false_for_duplicate() {
+            let mut config = LabelsConfig::default();
+            config.add("domain".to_string(), "Business domain".to_string());
+            assert!(!config.add("domain".to_string(), "Different desc".to_string()));
+        }
+
+        #[test]
+        fn remove_returns_true_for_existing() {
+            let mut config = LabelsConfig::default();
+            config.add("domain".to_string(), "desc".to_string());
+            assert!(config.remove("domain"));
+            assert!(!config.has("domain"));
+        }
+
+        #[test]
+        fn remove_returns_false_for_missing() {
+            let mut config = LabelsConfig::default();
+            assert!(!config.remove("nonexistent"));
+        }
+
+        #[test]
+        fn get_returns_definition() {
+            let mut config = LabelsConfig::default();
+            config.add("domain".to_string(), "Business domain".to_string());
+            let def = config.get("domain").unwrap();
+            assert_eq!(def.key, "domain");
+            assert_eq!(def.description, "Business domain");
+        }
+
+        #[test]
+        fn get_returns_none_for_missing() {
+            let config = LabelsConfig::default();
+            assert!(config.get("nonexistent").is_none());
+        }
+
+        #[test]
+        fn keys_returns_all() {
+            let mut config = LabelsConfig::default();
+            config.add("domain".to_string(), "a".to_string());
+            config.add("type".to_string(), "b".to_string());
+            let keys = config.keys();
+            assert_eq!(keys.len(), 2);
+            assert!(keys.contains(&"domain"));
+            assert!(keys.contains(&"type"));
         }
     }
 }

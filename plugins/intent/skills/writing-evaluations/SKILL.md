@@ -34,7 +34,7 @@ dna add evaluation \
   "Account balance must never go negative. All withdrawal operations must check available balance before executing and reject with insufficient-funds if the withdrawal would result in a negative balance. This must hold under concurrent requests." \
   --name "Non-negative account balance" \
   --label type=invariant \
-  --label area=billing
+  --label domain=billing
 ```
 
 **Good -- scenario:**
@@ -50,7 +50,7 @@ dna add evaluation \
 6. Session 6 invalidates the oldest session" \
   --name "Authentication correctness" \
   --label type=scenario \
-  --label area=auth
+  --label domain=auth
 ```
 
 Each numbered criterion is independently verifiable. An agent writing tests knows exactly what to test.
@@ -62,7 +62,7 @@ dna add evaluation \
   "Timezone-dependent reports must produce identical output regardless of the server's local timezone. Verified by: generating the same report with TZ=UTC and TZ=US/Pacific and diffing the output. Regression from March 2024 where monthly reports showed different totals depending on which server generated them." \
   --name "Timezone-independent reports" \
   --label type=regression \
-  --label area=reporting
+  --label domain=reporting
 ```
 
 The regression description includes the verification method and the original failure.
@@ -115,7 +115,7 @@ dna add evaluation \
 4. No data is lost -- queued login attempts are retried when the provider returns" \
   --name "Auth provider outage handling" \
   --label type=scenario \
-  --label area=auth
+  --label domain=auth
 ```
 
 ## During planning

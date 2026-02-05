@@ -3,7 +3,7 @@ use dna::db::lance::LanceDatabase;
 use dna::db::Database;
 use dna::embedding;
 use dna::embedding::EmbeddingProvider;
-use dna::mcp::RegisteredKind;
+use dna::mcp::{RegisteredKind, RegisteredLabel};
 use dna::services::{ArtifactService, ProjectConfig, SearchService};
 use figment::providers::{Env, Format, Serialized, Toml};
 use figment::Figment;
@@ -81,6 +81,7 @@ pub struct AppState {
     pub artifact_service: Arc<ArtifactService>,
     pub search_service: Arc<SearchService>,
     pub registered_kinds: Vec<RegisteredKind>,
+    pub registered_labels: Vec<RegisteredLabel>,
     pub server_config: ServerConfig,
 }
 
@@ -132,12 +133,24 @@ impl AppState {
             })
             .collect();
 
+        let registered_labels: Vec<RegisteredLabel> = config
+            .project
+            .labels
+            .definitions
+            .iter()
+            .map(|d| RegisteredLabel {
+                key: d.key.clone(),
+                description: d.description.clone(),
+            })
+            .collect();
+
         Ok(Self {
             db,
             embedding,
             artifact_service,
             search_service,
             registered_kinds,
+            registered_labels,
             server_config: config.server,
         })
     }

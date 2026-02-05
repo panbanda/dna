@@ -9,7 +9,13 @@ Before choosing an approach, understand what this system believes about itself.
 
 ## Step 1: Broad search
 
-Query DNA for truth related to the domain you are about to change.
+Start by reviewing the project's registered kinds and labels:
+
+```bash
+dna context
+```
+
+Then query DNA for truth related to the domain you are about to change.
 
 ```bash
 dna search "<what you are building or changing>"
@@ -21,7 +27,7 @@ dna search "<the domain area>" --kind constraint
 Also list recent artifacts in the area if labels are used:
 
 ```bash
-dna list --kind intent --label area=<relevant-area>
+dna list --kind intent --label domain=<relevant-area>
 ```
 
 You are looking for three things:

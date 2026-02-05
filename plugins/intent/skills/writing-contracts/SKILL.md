@@ -35,8 +35,7 @@ A contract must include:
 dna add contract \
   "The user service exposes identity lookup. Callers provide an opaque user identifier. The service returns display identity (name, avatar) and contact identity (email). The service NEVER exposes authentication credentials or internal database identifiers. Callers must handle: not-found, rate-limited, unavailable. Response latency must stay under 50ms at p99." \
   --name "User identity lookup" \
-  --label area=users \
-  --label service=user-service
+  --label domain=users
 ```
 
 This survives a rewrite from REST to GraphQL. It tells consumers what they can depend on and what they cannot.
@@ -45,8 +44,7 @@ This survives a rewrite from REST to GraphQL. It tells consumers what they can d
 dna add contract \
   "The event bus guarantees at-least-once delivery. Consumers must be idempotent. Message ordering is guaranteed within a partition key but not across partition keys. Maximum message size is 1MB. Messages not acknowledged within 30 seconds are redelivered." \
   --name "Event bus delivery guarantees" \
-  --label area=infrastructure \
-  --label service=event-bus
+  --label domain=infrastructure
 ```
 
 This defines the contract without naming Kafka, RabbitMQ, or any specific technology.

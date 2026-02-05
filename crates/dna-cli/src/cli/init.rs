@@ -28,6 +28,12 @@ fn print_template_info(template: &Template) {
     for kind in template.kinds {
         println!("      {}: {}", kind.slug, kind.description);
     }
+    if !template.labels.is_empty() {
+        println!("    Labels:");
+        for label in template.labels {
+            println!("      {}: {}", label.key, label.description);
+        }
+    }
 }
 
 pub async fn execute(args: InitArgs) -> Result<()> {
@@ -80,8 +86,15 @@ pub async fn execute(args: InitArgs) -> Result<()> {
 
         let updated = config_service.init_from_template(template)?;
         println!("  Template '{}' applied:", template.name);
+        println!("  Kinds:");
         for kind in &updated.kinds.definitions {
             println!("    {} - {}", kind.slug, kind.description);
+        }
+        if !updated.labels.definitions.is_empty() {
+            println!("  Labels:");
+            for label in &updated.labels.definitions {
+                println!("    {} - {}", label.key, label.description);
+            }
         }
         updated
     } else {

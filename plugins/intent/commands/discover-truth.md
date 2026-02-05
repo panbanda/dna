@@ -165,7 +165,7 @@ Each agent writes its output to `.dna/discovery/<kind>.json` with this schema:
       "name": "Short descriptive name",
       "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
-      "labels": {"area": "billing"},
+      "labels": {"domain": "billing"},
       "context": "Domain concepts, related areas, brief provenance -- embedded for graph-like search",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
@@ -270,8 +270,8 @@ Store all validated truth artifacts:
 # For each entry in store.json:
 dna add <kind> "<content>" \
   --name "<name>" \
-  --label area=<area> \
-  --label discovered=true \
+  --label domain=<domain> \
+  --label source=discovery \
   --label confidence=<confidence> \
   --context "<context>"
 ```
@@ -298,6 +298,6 @@ NEEDS HUMAN REVIEW:
 ```
 
 Remind the user:
-- Review artifacts labeled `discovered=true` for accuracy
+- Review artifacts labeled `source=discovery` for accuracy
 - The debt report is actionable -- consider creating tickets
 - Ambiguous candidates need a human decision: truth or debt?

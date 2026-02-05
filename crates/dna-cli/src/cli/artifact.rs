@@ -1,4 +1,4 @@
-use super::parse_metadata;
+use super::{parse_metadata, validate_label_keys};
 use anyhow::Result;
 use clap::Args;
 use dna::services::{ArtifactService, ConfigService, ContentFormat};
@@ -95,9 +95,16 @@ async fn create_service() -> Result<ArtifactService> {
 }
 
 pub async fn execute_add(args: AddArgs) -> Result<()> {
+    let project_root = PathBuf::from(".");
+    let config_service = ConfigService::new(&project_root);
+    let config = config_service.load()?;
+
     let service = create_service().await?;
     let format: ContentFormat = args.format.parse()?;
     let labels = parse_metadata(&args.labels)?;
+
+    let label_keys: Vec<String> = labels.keys().cloned().collect();
+    validate_label_keys(&label_keys, &config)?;
 
     let artifact = service
         .add(
@@ -131,11 +138,23 @@ pub async fn execute_get(args: GetArgs) -> Result<()> {
 }
 
 pub async fn execute_update(args: UpdateArgs) -> Result<()> {
+    let project_root = PathBuf::from(".");
+    let config_service = ConfigService::new(&project_root);
+    let config = config_service.load()?;
+
     let service = create_service().await?;
     let labels = if args.labels.is_empty() {
         None
     } else {
-        Some(parse_metadata(&args.labels)?)
+        let parsed = parse_metadata(&args.labels)?;
+        // Only validate keys that are being set (not removed via empty value)
+        let label_keys: Vec<String> = parsed
+            .iter()
+            .filter(|(_, v)| !v.is_empty())
+            .map(|(k, _)| k.clone())
+            .collect();
+        validate_label_keys(&label_keys, &config)?;
+        Some(parsed)
     };
 
     let artifact = service

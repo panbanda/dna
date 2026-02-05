@@ -1,7 +1,9 @@
 mod artifact;
 mod config;
+mod context;
 mod init;
 mod kind;
+mod label;
 mod mcp;
 mod render;
 mod search;
@@ -9,6 +11,7 @@ mod version;
 
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use dna::services::ProjectConfig;
 use std::collections::HashMap;
 
 /// Parse metadata key=value pairs from command line arguments
@@ -77,11 +80,42 @@ pub enum Commands {
     /// Manage artifact kinds
     Kind(kind::KindArgs),
 
+    /// Manage label keys
+    Label(label::LabelArgs),
+
+    /// Show project truth schema (kinds, labels, artifact counts)
+    Context(context::ContextArgs),
+
     /// Compact database and cleanup old versions
     Prune(version::PruneArgs),
 
     /// List database versions
     Versions(version::VersionsArgs),
+}
+
+/// Validate that all label keys in metadata are registered in the project config.
+///
+/// Returns an error listing unrecognized keys with a hint to register them.
+pub fn validate_label_keys(keys: &[String], config: &ProjectConfig) -> Result<()> {
+    if config.labels.definitions.is_empty() {
+        return Ok(());
+    }
+
+    let unregistered: Vec<&str> = keys
+        .iter()
+        .filter(|k| !config.labels.has(k))
+        .map(|k| k.as_str())
+        .collect();
+
+    if unregistered.is_empty() {
+        return Ok(());
+    }
+
+    let list = unregistered.join(", ");
+    Err(anyhow::anyhow!(
+        "Unregistered label key(s): {}. Register with 'dna label add <key> <description>'.",
+        list
+    ))
 }
 
 /// Execute the CLI command
@@ -100,6 +134,8 @@ pub async fn execute(cli: Cli) -> Result<()> {
         Commands::Config(args) => config::execute(args).await,
         Commands::Mcp(args) => mcp::execute(args).await,
         Commands::Kind(args) => kind::execute(args).await,
+        Commands::Label(args) => label::execute(args).await,
+        Commands::Context(args) => context::execute(args).await,
         Commands::Prune(args) => version::execute_prune(args).await,
         Commands::Versions(args) => version::execute_versions(args).await,
     }

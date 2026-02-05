@@ -31,7 +31,7 @@ RECON ──> DISCOVER ──> JUDGE ──> STORE ──> SUMMARY
 
 **Phase 3 -- Truth Judgment**: A single judge agent reads all candidates and applies cross-cutting analysis. Produces three output files separating truth from debt from ambiguity.
 
-**Phase 4 -- Store**: Validated truth artifacts are stored in DNA with `discovered=true` label.
+**Phase 4 -- Store**: Validated truth artifacts are stored in DNA with `source=discovery` label.
 
 **Phase 5 -- Summary**: Displays counts of stored truth, identified debt, and items needing human review.
 
@@ -95,7 +95,7 @@ Every discovery agent writes candidates in this format:
       "name": "Short descriptive name",
       "content": "The truth itself -- language-agnostic, survives a rewrite",
       "format": "markdown",
-      "labels": {"area": "billing"},
+      "labels": {"domain": "billing"},
       "context": "Domain concepts, related areas, brief provenance -- embedded for graph-like search",
       "source": {
         "type": "code|doc|ticket|pr|commit|config|test|conversation",
@@ -135,7 +135,7 @@ The `content` field is the truth itself -- language-agnostic, no implementation 
 
 ### Output
 
-After completion, artifacts are stored in DNA with the label `discovered=true`. The summary shows:
+After completion, artifacts are stored in DNA with the label `source=discovery`. The summary shows:
 
 ```text
 TRUTH ARTIFACTS STORED:
@@ -157,7 +157,7 @@ NEEDS HUMAN REVIEW:
   Full report: .dna/discovery/review.json
 ```
 
-Review stored artifacts with `dna list --label discovered=true`. The debt report is actionable -- consider creating tickets for high-severity findings.
+Review stored artifacts with `dna list --label source=discovery`. The debt report is actionable -- consider creating tickets for high-severity findings.
 
 ## extract-truth
 
@@ -191,7 +191,7 @@ Key differences from `discover-truth`:
 - **Interactive**: Presents candidates for user approval before storing
 - **Single agent**: No parallel discovery -- one pass through the input
 - **Confidence from document type**: An approved ADR gets high confidence; meeting notes get medium
-- **Labels with `extracted=true`** instead of `discovered=true` to distinguish the source
+- **Labels with `source=extraction`** instead of `source=discovery` to distinguish the source
 
 ### Usage
 
@@ -206,4 +206,4 @@ dna extract-truth --file "docs/*.md"
 dna extract-truth
 ```
 
-Review stored artifacts with `dna list --label extracted=true`.
+Review stored artifacts with `dna list --label source=extraction`.

@@ -137,6 +137,34 @@ fn parse_content_format(s: &str) -> Result<ContentFormat, String> {
         .map_err(|e| format!("Invalid content format '{}': {}", s, e))
 }
 
+/// Validate metadata keys against registered labels.
+/// Returns None if valid, Some(error_response) if invalid.
+fn validate_metadata_labels(
+    metadata: &HashMap<String, String>,
+    state: &AppState,
+) -> Option<axum::response::Response> {
+    if state.registered_labels.is_empty() {
+        return None;
+    }
+    let unregistered: Vec<&str> = metadata
+        .keys()
+        .filter(|k| !state.registered_labels.iter().any(|l| l.key == **k))
+        .map(|k| k.as_str())
+        .collect();
+    if unregistered.is_empty() {
+        None
+    } else {
+        Some(error_response(
+            axum::http::StatusCode::BAD_REQUEST,
+            "bad_request",
+            &format!(
+                "Unregistered label key(s): {}. Register with 'dna label add <key> <description>'.",
+                unregistered.join(", ")
+            ),
+        ))
+    }
+}
+
 #[utoipa::path(
     get,
     path = "/health",
@@ -237,6 +265,10 @@ async fn create_artifact(
 
     let metadata = body.metadata.unwrap_or_default();
 
+    if let Some(err) = validate_metadata_labels(&metadata, &state) {
+        return err;
+    }
+
     match state
         .artifact_service
         .add(body.kind, body.content, format, body.name, metadata, None)
@@ -308,6 +340,18 @@ async fn update_artifact(
     Path(id): Path<String>,
     Json(body): Json<UpdateBody>,
 ) -> axum::response::Response {
+    if let Some(ref metadata) = body.metadata {
+        // Only validate keys that are being set (not removed via empty value)
+        let non_empty: HashMap<String, String> = metadata
+            .iter()
+            .filter(|(_, v)| !v.is_empty())
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect();
+        if let Some(err) = validate_metadata_labels(&non_empty, &state) {
+            return err;
+        }
+    }
+
     match state
         .artifact_service
         .update(&id, body.content, body.name, body.kind, body.metadata, None)
@@ -493,6 +537,10 @@ async fn kind_create_artifact(
 
     let metadata = body.metadata.unwrap_or_default();
 
+    if let Some(err) = validate_metadata_labels(&metadata, &state) {
+        return err;
+    }
+
     match state
         .artifact_service
         .add(kind, body.content, format, body.name, metadata, None)
@@ -597,6 +645,121 @@ async fn list_changes(
     }
 }
 
+/// Response containing registered labels
+#[derive(Serialize, ToSchema)]
+pub struct LabelsResponse {
+    /// List of registered label definitions
+    labels: Vec<LabelItem>,
+}
+
+/// A registered label
+#[derive(Serialize, ToSchema)]
+pub struct LabelItem {
+    /// Label key
+    key: String,
+    /// Description of what this label represents
+    description: String,
+}
+
+/// Response containing the project truth schema
+#[derive(Serialize, ToSchema)]
+pub struct ContextResponse {
+    /// Registered kinds with artifact counts
+    kinds: Vec<ContextKind>,
+    /// Registered labels
+    labels: Vec<LabelItem>,
+    /// Total number of artifacts
+    total_artifacts: usize,
+}
+
+/// A kind in the context response
+#[derive(Serialize, ToSchema)]
+pub struct ContextKind {
+    /// Kind slug
+    slug: String,
+    /// Kind description
+    description: String,
+    /// Number of artifacts of this kind
+    artifact_count: usize,
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/labels",
+    tag = "Labels",
+    responses(
+        (status = 200, description = "List of registered labels", body = LabelsResponse),
+        (status = 401, description = "Unauthorized"),
+    ),
+    security(("bearer_auth" = []))
+)]
+async fn list_labels(State(state): State<AppState>) -> impl IntoResponse {
+    let labels = state
+        .registered_labels
+        .iter()
+        .map(|l| LabelItem {
+            key: l.key.clone(),
+            description: l.description.clone(),
+        })
+        .collect();
+    Json(LabelsResponse { labels })
+}
+
+#[utoipa::path(
+    get,
+    path = "/api/v1/context",
+    tag = "System",
+    responses(
+        (status = 200, description = "Project truth schema", body = ContextResponse),
+        (status = 401, description = "Unauthorized"),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
+async fn get_context(State(state): State<AppState>) -> axum::response::Response {
+    let artifacts = match state.artifact_service.list(SearchFilters::default()).await {
+        Ok(a) => a,
+        Err(e) => {
+            return error_response(
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                "internal_error",
+                &e.to_string(),
+            )
+        },
+    };
+
+    let mut counts: HashMap<String, usize> = HashMap::new();
+    for artifact in &artifacts {
+        *counts.entry(artifact.kind.clone()).or_default() += 1;
+    }
+
+    let kinds = state
+        .registered_kinds
+        .iter()
+        .map(|k| ContextKind {
+            slug: k.slug.clone(),
+            description: k.description.clone(),
+            artifact_count: *counts.get(&k.slug).unwrap_or(&0),
+        })
+        .collect();
+
+    let labels = state
+        .registered_labels
+        .iter()
+        .map(|l| LabelItem {
+            key: l.key.clone(),
+            description: l.description.clone(),
+        })
+        .collect();
+
+    Json(ContextResponse {
+        kinds,
+        labels,
+        total_artifacts: artifacts.len(),
+    })
+    .into_response()
+}
+
 /// OpenAPI documentation
 #[derive(OpenApi)]
 #[openapi(
@@ -617,6 +780,8 @@ async fn list_changes(
         kind_list_artifacts,
         kind_create_artifact,
         kind_search_artifacts,
+        list_labels,
+        get_context,
     ),
     components(schemas(
         Artifact,
@@ -635,13 +800,18 @@ async fn list_changes(
         KindCreateBody,
         KindSearchBody,
         KindListQuery,
+        LabelsResponse,
+        LabelItem,
+        ContextResponse,
+        ContextKind,
     )),
     tags(
         (name = "System", description = "System health and status"),
         (name = "Artifacts", description = "CRUD operations for artifacts"),
         (name = "Search", description = "Semantic search across artifacts"),
         (name = "Changes", description = "Track artifact changes over time"),
-        (name = "Kinds", description = "Kind-scoped artifact operations")
+        (name = "Kinds", description = "Kind-scoped artifact operations"),
+        (name = "Labels", description = "Label registry management")
     ),
     security(
         ("bearer_auth" = [])
@@ -726,7 +896,9 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/v1/artifacts", get(list_artifacts))
         .route("/api/v1/artifacts/{id}", get(get_artifact))
         .route("/api/v1/search", post(search_artifacts))
-        .route("/api/v1/changes", get(list_changes));
+        .route("/api/v1/changes", get(list_changes))
+        .route("/api/v1/labels", get(list_labels))
+        .route("/api/v1/context", get(get_context));
 
     // Kind-scoped routes
     let kind_write_routes = Router::new()
@@ -751,6 +923,7 @@ pub fn build_router(state: AppState) -> Router {
         state.db.clone(),
         state.embedding.clone(),
         state.registered_kinds.clone(),
+        state.registered_labels.clone(),
     );
 
     let mut router = Router::new()

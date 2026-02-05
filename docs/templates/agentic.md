@@ -111,7 +111,6 @@ dna add boundary "Never generate content promoting terrorism" --label type=redli
 **Labels**:
 - `--label owasp=LLM01-10`: OWASP classification
 - `--label severity=critical|high|medium|low`: Risk level
-- `--label status=mitigated|open|monitoring`: Current state
 
 **Examples**:
 
@@ -206,6 +205,16 @@ dna add governance "Model version: gpt-4-0613, deployed 2024-01-15" --label aspe
 dna add governance "Fine-tuning data reviewed and approved by safety team" --label aspect=provenance
 dna add governance "Third-party model components documented with licenses" --label aspect=provenance
 ```
+
+## Cross-Cutting Labels
+
+These labels apply across multiple kinds in the agentic template:
+
+| Label | Values | Use with |
+|-------|--------|----------|
+| `regulation` | `eu-ai-act`, `gdpr`, `hipaa`, etc. | governance, eval |
+| `framework` | `nist-ai-rmf`, `iso-42001`, etc. | governance, eval |
+| `risk` | `high`, `medium`, `low` | governance, threat |
 
 ## Regulatory Compliance
 

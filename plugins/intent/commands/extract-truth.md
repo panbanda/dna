@@ -127,12 +127,12 @@ For each approved candidate:
 dna add <kind> "<content>" \
   --name "<name>" \
   --label source=<document-type> \
-  --label extracted=true \
+  --label source=extraction \
   --label confidence=<confidence> \
   --context "<context>"
 ```
 
-Use `extracted=true` instead of `discovered=true` to distinguish artifacts from manual extraction vs. codebase discovery.
+Use `source=extraction` instead of `source=discovery` to distinguish artifacts from manual extraction vs. codebase discovery.
 
 ### Step 6: Summary
 

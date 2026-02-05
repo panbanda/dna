@@ -59,7 +59,7 @@ dna add intent "Sessions must expire after 30 minutes of inactivity"
 - Unstable interfaces
 - Implementation shortcuts
 
-**Labels**: `--label version=v1`, `--label service=orders`
+**Labels**: `--label version=v1`, `--label domain=orders`
 
 **Examples**:
 ```bash
@@ -240,7 +240,7 @@ Different from monitoring (operational health) - this is about business intellig
 - Compliance audit needs
 - Business intelligence queries
 
-**Labels**: `--label audience=board`, `--label compliance=sox`
+**Labels**: `--label audience=board`, `--label regulation=sox`
 
 **Examples**:
 ```bash

@@ -73,8 +73,7 @@ The "reason" prevents a future agent from "fixing" this to use post-discount sub
 ```bash
 dna add <kind> "<content>" \
   --name "<short descriptive name>" \
-  --label area=<domain-area> \
-  --label team=<owning-team> \
+  --label domain=<domain-area> \
   --context "<additional semantic context for search>"
 ```
 
@@ -84,11 +83,11 @@ Short, descriptive. Used for human identification. "Immutable invoices after fin
 
 ### Labels
 
+Label keys must be registered in your project before use. Run `dna label list` to see available labels, or `dna context` to view all registered kinds and labels.
+
 Use consistent label keys across the project:
 
-- `area=<domain>`: billing, auth, onboarding, etc.
-- `team=<owner>`: who is responsible for this truth
-- `service=<service>`: which service this governs
+- `domain=<domain>`: billing, auth, onboarding, etc.
 - `regulation=<name>`: for compliance artifacts (gdpr, hipaa, pci-dss)
 
 ### Context
@@ -98,7 +97,7 @@ The `--context` flag adds semantic context for search without polluting the arti
 ```bash
 dna add intent "Orders must not ship until payment is confirmed" \
   --name "Payment before shipment" \
-  --label area=orders \
+  --label domain=orders \
   --context "fulfillment, warehouse, payment verification, shipping hold"
 ```
 
