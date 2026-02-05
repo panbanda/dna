@@ -11,7 +11,7 @@ Find what must be queryable. Reporting requirements are encoded in database view
 
 ### 1. Analytics and tracking events
 
-```
+```text
 Grep: "analytics"
 Grep: "track"
 Grep: "event"
@@ -26,7 +26,7 @@ What events are tracked reveals what the business considers important to measure
 
 ### 2. Database views and materialized queries
 
-```
+```text
 Grep: "CREATE VIEW"
 Grep: "CREATE MATERIALIZED"
 Grep: "materialized"
@@ -36,7 +36,7 @@ Database views exist because someone needed a specific aggregation. The view def
 
 ### 3. Report generation code
 
-```
+```text
 Glob: **/reports/**
 Glob: **/reporting/**
 Grep: "report"
@@ -62,7 +62,7 @@ Look for tables or types with fields like: `total_count`, `sum_amount`, `last_ac
 
 ## Writing candidates
 
-```
+```yaml
 name: "Monthly revenue by product line"
 content: "Monthly business review requires revenue broken down by
 product line. Figures must reconcile with the accounting system

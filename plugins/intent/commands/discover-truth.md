@@ -17,7 +17,7 @@ Before spawning discovery agents, map the project and available data sources.
 
 Detect languages, frameworks, and structure:
 
-```
+```text
 Glob: **/*.rs, **/*.go, **/*.py, **/*.ts, **/*.js, **/*.java, **/*.rb
 Glob: **/Cargo.toml, **/package.json, **/go.mod, **/requirements.txt, **/Gemfile
 ```
@@ -32,14 +32,14 @@ Map project structure:
 
 Find entry points:
 
-```
+```text
 Glob: **/main.rs, **/main.go, **/app.ts, **/index.ts
 Glob: **/routes/**, **/handlers/**, **/controllers/**
 ```
 
 Find documentation:
 
-```
+```text
 Glob: **/README.md, **/CLAUDE.md, **/CONTRIBUTING.md
 Glob: **/docs/**/*.md, **/adr/**/*.md, **/decisions/**/*.md
 ```
@@ -280,7 +280,7 @@ dna add <kind> "<content>" \
 
 Display three sections:
 
-```
+```text
 TRUTH ARTIFACTS STORED:
   Intents: N    Contracts: N    Constraints: N
   Algorithms: N    Evaluations: N    Integrations: N

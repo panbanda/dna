@@ -53,13 +53,13 @@ This defines the contract without naming Kafka, RabbitMQ, or any specific techno
 
 **Bad:**
 
-```
+```text
 GET /api/v2/users/:id returns { id: number, name: string, email: string }
 ```
 
 This is a schema snapshot, not a contract. It will be stale when you add a field. The contract should describe what categories of data are returned, not exact field names.
 
-```
+```text
 The user service is built with Express.js and uses MongoDB.
 ```
 

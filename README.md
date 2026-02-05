@@ -209,6 +209,63 @@ dna init --template agentic
 
 See [docs/templates/](docs/templates/) for detailed documentation on each template.
 
+## Plugins and Skills
+
+DNA includes plugins that teach AI agents how to work with truth artifacts. Built on the [Agent Skills](https://agentskills.io) open standard.
+
+### Plugin structure
+
+```
+.claude-plugin/
+  marketplace.json          # Plugin registry
+
+plugins/
+  core/                     # Works with any DNA template
+    skills/
+      planning-with-truth/  # Search DNA before choosing an approach
+      validating-approach/  # Check plans against known truth
+      checking-truth/       # Pre-change verification
+      capturing-artifacts/  # How to write good artifacts
+      searching-artifacts/  # Query patterns and score interpretation
+      managing-kinds/       # Custom kind registration
+
+  intent/                   # Intent template specific
+    skills/
+      writing-intents/      # How to write intent artifacts
+      writing-contracts/    # How to write contract artifacts
+      writing-constraints/  # How to write constraint artifacts
+      writing-algorithms/   # How to write algorithm artifacts
+      writing-evaluations/  # How to write evaluation artifacts
+      reviewing-compliance/ # Post-implementation truth review
+    commands/
+      discover-truth        # Analyze a codebase with 11 parallel agents
+      extract-truth         # Extract artifacts from documents and prompts
+    agents/                 # Discovery agent instructions (11 + judge)
+    reference/              # Kind reference documentation
+```
+
+### Commands
+
+| Command | Source | What it does |
+|---------|--------|-------------|
+| `discover-truth` | Codebase | Spawns 11 parallel agents to analyze code, tests, config, and external sources. A truth judge separates truth from debt from ambiguity. |
+| `extract-truth` | Documents, prompts | Single-pass extraction from design docs, PRDs, incident reports, meeting notes, or inline text. Presents candidates for user review before storing. |
+
+### Discovery workflow
+
+```
+RECON --> DISCOVER --> JUDGE --> STORE --> SUMMARY
+1 agent   11 agents   1 agent   CLI       output
+           parallel
+```
+
+The recon phase maps the codebase, identifies product capabilities, and detects available external sources (issue trackers, docs, PRs via MCP). Discovery agents adapt their search patterns to the detected language and framework. All artifact output is language-agnostic -- it must survive a rewrite.
+
+Results are separated into three files:
+- `store.json` -- validated truth, stored in DNA
+- `debt.json` -- technical debt findings, not stored
+- `review.json` -- ambiguous candidates needing human judgment
+
 ## MCP Integration
 
 DNA works with AI agents via Model Context Protocol:

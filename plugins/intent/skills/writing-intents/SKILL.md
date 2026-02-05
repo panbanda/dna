@@ -22,7 +22,7 @@ A declarative statement about a user-observable outcome or rule. It answers: "Wh
 
 One intent = one decision. State the rule, then the reason.
 
-```
+```text
 <What must be true>. <Why this matters or what goes wrong without it>.
 ```
 
@@ -57,12 +57,12 @@ dna add intent \
 
 **Bad:**
 
-```
+```text
 We use PostgreSQL.
 ```
 This is a technology choice, not an intent. The intent would be: "The system requires ACID transactions with complex relational queries. Document stores were evaluated and rejected because of cross-entity consistency requirements."
 
-```
+```text
 The API should be RESTful.
 ```
 This is an architectural preference. The intent would be: "External consumers depend on stable, predictable URLs. Breaking URL changes have historically caused integration failures with 3+ partners."

@@ -13,7 +13,7 @@ Find terms that have domain-specific meaning. The goal is to capture terms where
 
 Find domain model definitions. The recon summary identifies the source directories -- focus on models, domain, and entity directories:
 
-```
+```text
 Glob: **/models/**
 Glob: **/domain/**
 Glob: **/entities/**
@@ -30,14 +30,14 @@ Use the language detected in recon to search for type definitions appropriately.
 
 Enums encode a fixed vocabulary. Each variant is a glossary candidate when the names are domain-specific:
 
-```
+```text
 # OrderStatus { Pending, Confirmed, Shipped, Delivered, Cancelled }
 # UserRole { Member, Admin, Owner }
 ```
 
 ### 3. Existing glossaries
 
-```
+```text
 Grep: "glossary"
 Grep: "terminology"
 Grep: "definitions"
@@ -49,7 +49,7 @@ Check README, docs, and wikis for existing glossary sections.
 
 Search for terms that appear with different meanings in different places:
 
-```
+```text
 Grep: "user"   -- Is it always clear whether this means authenticated member, visitor, or admin?
 Grep: "account" -- Does it mean user account, billing account, or organization?
 Grep: "project" -- Is this consistent across the codebase?
@@ -59,7 +59,7 @@ Grep: "project" -- Is this consistent across the codebase?
 
 Authorization systems often introduce domain-specific vocabulary that is used inconsistently:
 
-```
+```text
 Grep: "role"
 Grep: "permission"
 Grep: "scope"
@@ -90,7 +90,7 @@ Look for terms where the codebase's usage differs from common understanding:
 
 Define the term precisely and state what it is NOT:
 
-```
+```yaml
 name: "Member"
 content: "An authenticated individual who has completed onboarding
 and has an active subscription. Has a profile, can create content.

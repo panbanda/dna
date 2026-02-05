@@ -11,7 +11,7 @@ Find what the system observes about itself and what thresholds trigger action.
 
 ### 1. Metrics emission
 
-```
+```text
 Grep: "metric"
 Grep: "counter"
 Grep: "histogram"
@@ -28,7 +28,7 @@ What metrics are emitted? Are they named consistently? Do they have labels/tags?
 
 ### 2. Alert configuration
 
-```
+```text
 Glob: **/alerts/**
 Glob: **/monitoring/**
 Glob: **/*alert*
@@ -44,7 +44,7 @@ Alert configs define what the team considers important enough to wake someone up
 
 ### 3. Health checks
 
-```
+```text
 Grep: "health"
 Grep: "ready"
 Grep: "liveness"
@@ -55,7 +55,7 @@ Health check endpoints reveal what the system considers "healthy."
 
 ### 4. Structured logging
 
-```
+```text
 Grep: "log.error"
 Grep: "log.warn"
 Grep: "logger"
@@ -80,7 +80,7 @@ What is logged at error/warn level reveals what conditions the team considers no
 
 State what to observe and when to act, not the tool configuration:
 
-```
+```yaml
 name: "Payment pipeline observability"
 content: "The payment pipeline must emit: transaction count by
 status (success/failure/timeout), processing latency at p50/p95/p99,

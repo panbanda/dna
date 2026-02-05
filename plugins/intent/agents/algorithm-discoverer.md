@@ -26,7 +26,7 @@ LOOK FOR functions that:
 
 ### 1. Domain logic directories
 
-```
+```text
 Grep: "calculate"
 Grep: "compute"
 Grep: "score"
@@ -45,7 +45,7 @@ Follow these to the function definitions. Read the entire function and any helpe
 
 ### 2. State machines
 
-```
+```text
 Grep: "state"
 Grep: "transition"
 Grep: "status"
@@ -60,7 +60,7 @@ State machines encode allowed transitions. The transition rules are algorithms.
 ### 3. Business rule files
 
 Look for files or directories named:
-```
+```text
 Glob: **/rules/**
 Glob: **/policies/**
 Glob: **/pricing/**
@@ -73,7 +73,7 @@ Glob: **/eligibility/**
 
 Test files often document the expected behavior more clearly than the code:
 
-```
+```text
 Grep: "assert.*price"
 Grep: "assert.*score"
 Grep: "assert.*total"
@@ -119,7 +119,7 @@ Classify as **ambiguous** when:
 
 Authorization and permission systems often contain algorithms -- the logic that resolves whether an action is allowed:
 
-```
+```text
 Grep: "resolve"
 Grep: "evaluate"
 Grep: "inherit"
@@ -142,7 +142,7 @@ These are algorithms because they define computation logic with specific rules a
 
 Describe the logic, not the code:
 
-```
+```yaml
 # From code:
 # fn risk_score(tx: &Transaction) -> f64 {
 #     let amount_factor = (tx.amount / tx.avg_90d).min(1.0);

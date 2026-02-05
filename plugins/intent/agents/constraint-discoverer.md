@@ -13,7 +13,7 @@ The critical distinction: a constraint is a limit that SHOULD exist. A workaroun
 
 ### 1. Input validation
 
-```
+```text
 Grep: "validate"
 Grep: "max_length"
 Grep: "min_length"
@@ -35,7 +35,7 @@ Every validation function reveals a constraint. The question is whether the limi
 
 ### 2. Security middleware and configuration
 
-```
+```text
 Grep: "auth"
 Grep: "middleware"
 Grep: "cors"
@@ -55,7 +55,7 @@ Security patterns are almost always intentional constraints. Extract the policy,
 
 ### 3. Error handling patterns
 
-```
+```text
 Grep: "reject"
 Grep: "deny"
 Grep: "forbidden"
@@ -68,7 +68,7 @@ What the system rejects tells you what it considers unacceptable. If every handl
 
 ### 4. Configuration files
 
-```
+```text
 Glob: **/config/**
 Glob: **/*.toml
 Glob: **/*.yaml
@@ -80,7 +80,7 @@ Look for: timeout values, max retries, pool sizes, rate limits, size limits, TTL
 
 ### 5. Infrastructure constraints
 
-```
+```text
 Glob: **/Dockerfile
 Glob: **/docker-compose*
 Glob: **/.github/workflows/**
@@ -96,7 +96,7 @@ Authorization is a cross-cutting constraint system. Discover the model, not just
 
 #### Identify the model type
 
-```
+```text
 Grep: "role"
 Grep: "permission"
 Grep: "policy"
@@ -127,7 +127,7 @@ Many systems combine models (e.g., RBAC for coarse access + ABAC for row-level f
 
 #### Find the permission boundaries
 
-```
+```text
 Grep: "admin"
 Grep: "super.?admin"
 Grep: "sudo"
@@ -144,7 +144,7 @@ Look for operations that are restricted even for administrators. These are the h
 
 #### Find tenant isolation
 
-```
+```text
 Grep: "tenant"
 Grep: "org.?id"
 Grep: "organization"
@@ -162,7 +162,7 @@ Multi-tenancy constraints are critical. Determine:
 
 #### Find permission check patterns
 
-```
+```text
 Grep: "authorize"
 Grep: "has_permission"
 Grep: "check_access"
@@ -183,7 +183,7 @@ Look for WHERE permission checks happen:
 
 #### Look for FGA/Zanzibar patterns
 
-```
+```text
 Grep: "openfga"
 Grep: "zanzibar"
 Grep: "spicedb"
@@ -212,7 +212,7 @@ If an FGA or policy engine is used, the authorization model and policy definitio
 
 Authorization constraints should capture the MODEL and the BOUNDARIES, not individual permission checks:
 
-```
+```yaml
 # Candidate:
 name: "Tenant data isolation"
 content: "Every database query must be scoped to the requesting user's
@@ -226,7 +226,7 @@ reasoning: "RLS policies on all tables. Middleware injects tenant_id.
 Integration tests verify cross-tenant access returns empty results."
 ```
 
-```
+```yaml
 # Candidate:
 name: "Permission model"
 content: "Authorization uses role-based access control with four roles:
@@ -243,7 +243,7 @@ routes. Tests verify each role's boundaries."
 
 ### 7. Database schema constraints
 
-```
+```text
 Grep: "NOT NULL"
 Grep: "UNIQUE"
 Grep: "CHECK"
@@ -277,7 +277,7 @@ Classify as **ambiguous** when:
 
 State the limit, the scope, and the reason:
 
-```
+```yaml
 # From code: rate_limit(100, per=timedelta(minutes=1)) on all API routes
 # From config: max_upload_size = 50MB
 # From Dockerfile: memory limit 512MB

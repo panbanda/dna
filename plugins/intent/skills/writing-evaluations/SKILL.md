@@ -69,13 +69,13 @@ The regression description includes the verification method and the original fai
 
 **Bad:**
 
-```
+```text
 The auth system should work correctly and be tested.
 ```
 
 Not an evaluation. "Correctly" is undefined. "Tested" is a process, not a criterion.
 
-```
+```text
 Response time should be good.
 ```
 
@@ -89,7 +89,7 @@ Each criterion should be something you could check without knowing the implement
 - **Specific**: Only one interpretation of pass/fail
 - **Independent**: Each criterion can be checked separately
 
-```
+```text
 # Bad: unverifiable
 The system handles errors gracefully.
 

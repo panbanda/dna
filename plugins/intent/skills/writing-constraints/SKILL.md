@@ -57,19 +57,19 @@ dna add constraint \
 
 **Bad:**
 
-```
+```text
 Don't use eval().
 ```
 
 Too implementation-specific. The constraint is "user input must never be interpreted as code." The eval() prohibition is one consequence of that constraint in one language.
 
-```
+```text
 Be careful with security.
 ```
 
 Not a constraint. This is an aspiration that constrains nothing.
 
-```
+```text
 Max upload size: 100MB.
 ```
 

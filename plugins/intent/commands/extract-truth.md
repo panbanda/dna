@@ -97,7 +97,7 @@ Read through the input and identify truth artifacts. For each candidate, determi
 
 Before storing, present all candidates to the user grouped by classification:
 
-```
+```text
 EXTRACTED TRUTH CANDIDATES:
 
   [intent] "Event sourcing for order state"
@@ -136,7 +136,7 @@ Use `extracted=true` instead of `discovered=true` to distinguish artifacts from 
 
 ### Step 6: Summary
 
-```
+```text
 TRUTH ARTIFACTS STORED: N
   (list each with kind and name)
 

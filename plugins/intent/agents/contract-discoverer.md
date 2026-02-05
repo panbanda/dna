@@ -13,7 +13,7 @@ The challenge is distinguishing between the contract (what is promised) and the 
 
 ### 1. API specifications
 
-```
+```text
 Glob: **/openapi.yaml
 Glob: **/openapi.json
 Glob: **/swagger.yaml
@@ -26,7 +26,7 @@ If a formal spec exists, it is likely an intentional contract. Extract: the endp
 
 ### 2. Route/handler definitions
 
-```
+```text
 Glob: **/routes/**
 Glob: **/handlers/**
 Glob: **/controllers/**
@@ -45,7 +45,7 @@ Look for middleware chains -- they reveal cross-cutting contracts (auth required
 
 Find the types that define module boundaries. Look at directories the recon identified as source code:
 
-```
+```text
 Glob: **/models/**
 Glob: **/types/**
 Glob: **/schemas/**
@@ -60,7 +60,7 @@ Use the language detected in recon to search for public type definitions appropr
 
 ### 4. Event/message schemas
 
-```
+```text
 Grep: "event"
 Grep: "message"
 Grep: "topic"
@@ -84,7 +84,7 @@ For each capability:
 
 Also look for tier-differentiated capabilities:
 
-```
+```text
 Grep: "enterprise"
 Grep: "premium"
 Grep: "plan"
@@ -120,7 +120,7 @@ Classify as **ambiguous** when:
 
 Describe the agreement, not the implementation:
 
-```
+```yaml
 # From code: router.get("/users/:id", auth_middleware, get_user_handler)
 # The handler returns: UserResponse { id, name, email, avatar_url, created_at }
 

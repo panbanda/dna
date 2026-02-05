@@ -77,7 +77,7 @@ fn calculate_price(items: &[Item]) -> f64 {
 
 This is code, not an algorithm artifact. It dies with a language change, has no edge case documentation, and does not explain the discount-then-sum ordering.
 
-```
+```text
 Use a weighted average for risk scoring.
 ```
 
@@ -87,7 +87,7 @@ Too vague. Two agents would produce different implementations. The weights, norm
 
 When an algorithm makes a choice that someone might want to "fix":
 
-```
+```text
 Shipping uses PRE-discount subtotal.
 Reason: prevents gaming via high-discount items where the customer
 adds a heavily discounted item to reduce shipping cost below what

@@ -11,7 +11,7 @@ Find external dependencies and the assumptions the system makes about them.
 
 ### 1. Package manifests
 
-```
+```text
 Glob: **/Cargo.toml, **/package.json, **/go.mod, **/requirements.txt, **/Gemfile
 ```
 
@@ -19,7 +19,7 @@ Search for SDK packages: payment providers (stripe, braintree), email (sendgrid,
 
 ### 2. API client code
 
-```
+```text
 Grep: "http.?client"
 Grep: "fetch\("
 Grep: "axios"
@@ -35,7 +35,7 @@ For each external call, determine: what service, what operations, what error han
 
 ### 3. Environment variables
 
-```
+```text
 Glob: **/.env.example
 Glob: **/.env.sample
 ```
@@ -44,7 +44,7 @@ Environment variable names reveal integrations: `STRIPE_API_KEY`, `SENDGRID_API_
 
 ### 4. Docker/infrastructure
 
-```
+```text
 Glob: **/docker-compose*
 Glob: **/terraform/**
 Glob: **/k8s/**
@@ -65,7 +65,7 @@ External services in docker-compose or infrastructure-as-code reveal dependencie
 
 Describe the dependency boundary, not the SDK:
 
-```
+```yaml
 name: "Payment provider integration"
 content: "Payment processing is delegated to an external provider.
 Requirements: idempotent charge creation, webhook delivery with

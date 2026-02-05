@@ -45,7 +45,7 @@ One artifact = one truth. Do not combine multiple decisions into a single artifa
 
 State observable behavior, not implementation:
 
-```
+```text
 # Bad: implementation-specific
 Use bcrypt with cost factor 12.
 
@@ -60,7 +60,7 @@ stored in plaintext, or transmitted after initial receipt.
 
 Document edge cases with reasoning:
 
-```
+```text
 Shipping is calculated on the pre-discount subtotal.
 Reason: prevents gaming via high-discount items where the
 discount exceeds the shipping savings.

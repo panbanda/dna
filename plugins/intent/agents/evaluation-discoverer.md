@@ -11,7 +11,7 @@ Find what defines "correct." Evaluations are encoded in tests, CI pipelines, acc
 
 ### 1. Test descriptions and names
 
-```
+```text
 Glob: **/tests/**
 Glob: **/test/**
 Glob: **/*_test.*
@@ -30,7 +30,7 @@ For each test file, extract the behaviors being verified, not the test mechanics
 
 ### 2. Property-based tests
 
-```
+```text
 Grep: "proptest"
 Grep: "quickcheck"
 Grep: "hypothesis"
@@ -43,7 +43,7 @@ Property tests encode invariants -- things that must ALWAYS be true regardless o
 
 ### 3. Integration and E2E tests
 
-```
+```text
 Glob: **/e2e/**
 Glob: **/integration/**
 Glob: **/acceptance/**
@@ -53,7 +53,7 @@ These test system-level behavior and often correspond directly to evaluation art
 
 ### 4. CI configuration
 
-```
+```text
 Glob: **/.github/workflows/**
 Glob: **/.gitlab-ci.*
 Glob: **/Jenkinsfile
@@ -68,7 +68,7 @@ What the CI pipeline checks reveals what the team considers "correct":
 
 ### 5. Assertion patterns
 
-```
+```text
 Grep: "assert"
 Grep: "expect"
 Grep: "should"
@@ -88,7 +88,7 @@ Focus on assertions in integration tests and E2E tests. Unit test assertions are
 
 Group related test assertions into a single evaluation artifact. Do not create one artifact per test case. Instead:
 
-```
+```yaml
 # From 5 separate tests:
 # - test_valid_login_returns_token
 # - test_invalid_password_returns_generic_error
@@ -126,7 +126,7 @@ Classify as **ambiguous** when:
 
 State the criteria, not the test code:
 
-```
+```yaml
 # Candidate:
 name: "Non-negative account balance"
 content: "Account balance must never go negative. All withdrawal

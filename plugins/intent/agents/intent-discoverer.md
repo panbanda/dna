@@ -11,7 +11,7 @@ Find the reasoning behind decisions. Intents are the hardest artifacts to discov
 
 ### 1. Architecture Decision Records
 
-```
+```text
 Glob: **/adr/**/*.md
 Glob: **/decisions/**/*.md
 Glob: **/docs/architecture*.md
@@ -24,7 +24,7 @@ Extract: the decision and the rationale. Discard: the status and date (implement
 
 ### 2. README and project documentation
 
-```
+```text
 Glob: **/README.md
 Glob: **/CLAUDE.md
 Glob: **/CONTRIBUTING.md
@@ -37,7 +37,7 @@ Look for sections titled: "Why", "Philosophy", "Principles", "Design", "Architec
 
 Search for comments that explain WHY, not WHAT:
 
-```
+```text
 Grep: "because"
 Grep: "reason:"
 Grep: "rationale"
@@ -98,7 +98,7 @@ These are among the highest-value intents because they describe the system's rea
 
 Search for patterns that indicate customer-specific or tier-specific behavior:
 
-```
+```text
 Grep: "enterprise"
 Grep: "premium"
 Grep: "plan"
@@ -129,7 +129,7 @@ Classify as **ambiguous** when:
 
 Strip implementation details. Keep only the decision and the reason:
 
-```
+```yaml
 # From code: "// We use event sourcing here because partial updates
 # caused data loss during the outage in Jan 2024"
 

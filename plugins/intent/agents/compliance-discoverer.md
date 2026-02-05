@@ -11,7 +11,7 @@ Find regulatory and legal obligations encoded in the system. Compliance artifact
 
 ### 1. Data handling patterns
 
-```
+```text
 Grep: "encrypt"
 Grep: "decrypt"
 Grep: "hash"
@@ -31,7 +31,7 @@ Grep: "ccpa"
 
 ### 2. Consent and privacy
 
-```
+```text
 Grep: "consent"
 Grep: "opt.?in"
 Grep: "opt.?out"
@@ -47,7 +47,7 @@ Grep: "right.?to.?forget"
 
 ### 3. Audit logging
 
-```
+```text
 Grep: "audit"
 Grep: "audit.?log"
 Grep: "audit.?trail"
@@ -57,7 +57,7 @@ Audit logs exist because a regulation or policy requires them.
 
 ### 4. Access control
 
-```
+```text
 Grep: "role"
 Grep: "permission"
 Grep: "authorize"
@@ -82,7 +82,7 @@ Access control patterns often stem from compliance requirements (SOC2: least pri
 
 Always cite the regulation:
 
-```
+```yaml
 name: "GDPR right to erasure"
 content: "User data deletion requests must be fulfilled within 72
 hours. Deletion must propagate to: primary database, search indices,

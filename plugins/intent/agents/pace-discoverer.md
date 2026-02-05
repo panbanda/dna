@@ -23,7 +23,7 @@ High-churn areas are likely "fast" pace. Low-churn areas may be "slow" pace (cri
 
 ### 2. Code review configuration
 
-```
+```text
 Glob: **/.github/CODEOWNERS
 Glob: **/CODEOWNERS
 Glob: **/.github/workflows/ci.yml
@@ -42,7 +42,7 @@ Protected branches with required reviews, status checks, and approvals indicate 
 
 ### 4. Deployment configuration
 
-```
+```text
 Glob: **/.github/workflows/deploy*
 Glob: **/deploy/**
 Grep: "canary"
@@ -66,7 +66,7 @@ Canary deployments, staged rollouts, and feature flags indicate areas where the 
 
 ## Writing candidates
 
-```
+```yaml
 name: "Auth change pace"
 content: "Authentication and authorization: slow. Changes require
 security review and staged rollout. No same-day deploys for auth

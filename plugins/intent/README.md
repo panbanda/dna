@@ -19,7 +19,7 @@ The command is orchestrated by Claude Code. It spawns subagents to analyze the c
 
 The command runs in 5 phases:
 
-```
+```text
 RECON ──> DISCOVER ──> JUDGE ──> STORE ──> SUMMARY
   1 agent   11 agents    1 agent   CLI       output
              parallel
@@ -137,7 +137,7 @@ The `content` field is the truth itself -- language-agnostic, no implementation 
 
 After completion, artifacts are stored in DNA with the label `discovered=true`. The summary shows:
 
-```
+```text
 TRUTH ARTIFACTS STORED:
   Intents: 8    Contracts: 5    Constraints: 12
   Algorithms: 3    Evaluations: 7    Integrations: 4
@@ -181,7 +181,7 @@ Use `extract-truth` when the source is not a codebase. Use `discover-truth` for 
 
 Unlike `discover-truth`, this command does not spawn parallel agents or run a recon phase. It reads the input, identifies artifacts across all 11 kinds, and presents candidates for review before storing.
 
-```
+```text
 READ ──> EXTRACT ──> REVIEW ──> STORE
  input    candidates   user      CLI
                        approval
