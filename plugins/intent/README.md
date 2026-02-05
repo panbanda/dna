@@ -158,3 +158,52 @@ NEEDS HUMAN REVIEW:
 ```
 
 Review stored artifacts with `dna list --label discovered=true`. The debt report is actionable -- consider creating tickets for high-severity findings.
+
+## extract-truth
+
+Extract truth artifacts from non-code sources -- documents, prompts, conversations, specs, incident reports, or any text input.
+
+### When to use
+
+Use `extract-truth` when the source is not a codebase. Use `discover-truth` for codebase analysis.
+
+| Source type | Examples |
+|-------------|----------|
+| Design documents | Architecture specs, RFCs, ADRs |
+| Product requirements | PRDs, user stories, acceptance criteria |
+| Incident reports | Post-mortems, root cause analyses |
+| Meeting notes | Decision logs, architecture reviews |
+| Conversations | Interview transcripts, Slack threads |
+| Existing truth directories | Another project's `truth/` directory |
+| Inline text | User describing their system directly |
+
+### How it works
+
+Unlike `discover-truth`, this command does not spawn parallel agents or run a recon phase. It reads the input, identifies artifacts across all 11 kinds, and presents candidates for review before storing.
+
+```
+READ ──> EXTRACT ──> REVIEW ──> STORE
+ input    candidates   user      CLI
+                       approval
+```
+
+Key differences from `discover-truth`:
+- **Interactive**: Presents candidates for user approval before storing
+- **Single agent**: No parallel discovery -- one pass through the input
+- **Confidence from document type**: An approved ADR gets high confidence; meeting notes get medium
+- **Labels with `extracted=true`** instead of `discovered=true` to distinguish the source
+
+### Usage
+
+```bash
+# From a file
+dna extract-truth --file docs/architecture.md
+
+# From a directory of docs
+dna extract-truth --file "docs/*.md"
+
+# From inline text (interactive)
+dna extract-truth
+```
+
+Review stored artifacts with `dna list --label extracted=true`.
