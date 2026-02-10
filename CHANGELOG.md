@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.5](https://github.com/panbanda/dna/compare/dna-v0.3.4...dna-v0.3.5) (2026-02-10)
+
+
+### Features
+
+* add enforced label registry mirroring kind registry ([3753ed7](https://github.com/panbanda/dna/commit/3753ed754a5c02e329e441d2db9a141bf1fe014f))
+* enforced label registry in config ([123fff7](https://github.com/panbanda/dna/commit/123fff7664d1a90d22f87366cf6434cf72dcbbe6))
+* upgrade rmcp SDK from 0.14.0 (git pin) to 0.15.0 (crates.io) ([9c2d899](https://github.com/panbanda/dna/commit/9c2d8992bfd4a7fe17600c80fa1c856890302bbc))
+* upgrade rmcp SDK to 0.15.0 for MCP protocol 2025-03-26 ([43c8b98](https://github.com/panbanda/dna/commit/43c8b98e66891e5afffb0a38c71b96584b299e4e))
+
 ## [0.3.4](https://github.com/panbanda/dna/compare/dna-v0.3.3...dna-v0.3.4) (2026-02-05)
 
 
