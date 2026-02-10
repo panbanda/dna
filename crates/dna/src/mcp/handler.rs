@@ -1122,6 +1122,24 @@ mod tests {
         let handler = test_handler();
         let info = handler.get_info();
         assert_eq!(info.server_info.name, "dna-server");
+        assert!(info.server_info.description.is_none());
         assert!(info.capabilities.tools.is_some());
+    }
+
+    #[test]
+    fn tool_struct_has_execution_field() {
+        use rmcp::model::Tool;
+        let tool = Tool {
+            name: "test".into(),
+            description: Some("test".into()),
+            input_schema: std::sync::Arc::new(serde_json::Map::new()),
+            title: None,
+            output_schema: None,
+            annotations: None,
+            execution: None,
+            icons: None,
+            meta: None,
+        };
+        assert!(tool.execution.is_none());
     }
 }
