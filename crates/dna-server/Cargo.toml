@@ -26,7 +26,7 @@ tower-http = { version = "0.6", features = ["cors", "trace"] }
 lambda_http = "1.0"
 
 # MCP over HTTP
-rmcp = { git = "https://github.com/modelcontextprotocol/rust-sdk", rev = "8d09f88", features = ["server", "macros", "transport-streamable-http-server", "schemars"] }
+rmcp = { version = "0.15", features = ["server", "macros", "transport-streamable-http-server", "schemars"] }
 
 # Async runtime
 tokio = { workspace = true }
