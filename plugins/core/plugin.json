@@ -1,7 +1,7 @@
 {
   "name": "dna-core",
   "description": "Core skills for planning with truth, capturing artifacts, searching the store, and validating changes against system identity",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Panbanda"
   },

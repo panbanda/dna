@@ -1,7 +1,7 @@
 {
   "name": "dna-intent",
   "description": "Intent template skills for writing intents, contracts, constraints, algorithms, and evaluations with correct structure and specificity",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "author": {
     "name": "Panbanda"
   },
