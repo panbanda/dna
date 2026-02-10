@@ -2,5 +2,5 @@
   ".": "0.3.5",
   "plugins/core": "0.3.0",
   "plugins/intent": "0.3.0",
-  ".claude-plugin": "0.4.0"
+  ".claude-plugin": "0.5.0"
 }
