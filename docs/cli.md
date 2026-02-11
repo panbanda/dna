@@ -570,10 +570,11 @@ Options:
 
       --after <DATE>
               Only artifacts created after this date.
-              Format: YYYY-MM-DD or ISO 8601
+              Format: YYYY-MM-DD or RFC3339 (e.g. 2024-01-15T10:30:00Z)
 
       --before <DATE>
               Only artifacts created before this date.
+              Format: YYYY-MM-DD or RFC3339 (e.g. 2024-01-15T10:30:00Z)
 
       --limit <N>
               Maximum results. [default: 100]
@@ -622,7 +623,8 @@ Filter which artifacts:
               Specific artifact by ID
 
       --since <DATE>
-              Only artifacts modified after date
+              Only artifacts modified after date.
+              Format: YYYY-MM-DD or RFC3339 (e.g. 2024-01-15T10:30:00Z)
 
 Options:
       --dry-run    Show what would be reindexed without doing it

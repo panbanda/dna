@@ -36,11 +36,11 @@ pub struct ListArgs {
     #[arg(long = "filter")]
     filters: Vec<String>,
 
-    /// Show only artifacts updated after timestamp
+    /// Show only artifacts updated after this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     after: Option<String>,
 
-    /// Show only artifacts updated before timestamp
+    /// Show only artifacts updated before this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     before: Option<String>,
 
@@ -51,11 +51,11 @@ pub struct ListArgs {
 
 #[derive(Args)]
 pub struct DiffArgs {
-    /// Show changes since this date (YYYY-MM-DD)
+    /// Show changes since this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     since: String,
 
-    /// Show changes until this date (YYYY-MM-DD). Defaults to now.
+    /// Show changes until this date (YYYY-MM-DD or RFC3339 datetime). Defaults to now.
     #[arg(long)]
     until: Option<String>,
 
@@ -158,7 +158,7 @@ pub struct ReindexArgs {
     #[arg(long)]
     pub id: Option<String>,
 
-    /// Only reindex artifacts modified after this date (YYYY-MM-DD).
+    /// Only reindex artifacts modified after this date (YYYY-MM-DD or RFC3339 datetime).
     /// Useful for incremental reindexing after bulk imports or migrations.
     #[arg(long)]
     pub since: Option<String>,
@@ -236,16 +236,8 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
     let service = ArtifactService::new(db, embedding);
 
     let metadata = parse_metadata(&args.filters)?;
-    let after = args
-        .after
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
-    let before = args
-        .before
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
+    let after = args.after.as_ref().map(|s| parse_date(s)).transpose()?;
+    let before = args.before.as_ref().map(|s| parse_date(s)).transpose()?;
 
     let filters = SearchFilters {
         kind: args.kind,
@@ -269,8 +261,17 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
 }
 
 fn parse_date(s: &str) -> Result<chrono::DateTime<Utc>> {
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
+        return Ok(dt.with_timezone(&Utc));
+    }
     NaiveDate::parse_from_str(s, "%Y-%m-%d")
-        .map_err(|e| anyhow::anyhow!("Invalid date '{}': {}. Use YYYY-MM-DD.", s, e))
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Invalid date '{}': {}. Use YYYY-MM-DD or RFC3339 (e.g. 2024-01-15T10:30:00Z).",
+                s,
+                e
+            )
+        })
         .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
 }
 
@@ -477,21 +478,7 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     // Build filters from args
     let metadata = parse_metadata(&args.labels)?;
 
-    let after = args
-        .since
-        .as_ref()
-        .map(|s| {
-            NaiveDate::parse_from_str(s, "%Y-%m-%d")
-                .map_err(|e| {
-                    anyhow::anyhow!(
-                        "Invalid date format for --since '{}': {}. Use YYYY-MM-DD.",
-                        s,
-                        e
-                    )
-                })
-                .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
-        })
-        .transpose()?;
+    let after = args.since.as_ref().map(|s| parse_date(s)).transpose()?;
 
     let filters = SearchFilters {
         kind: args.kind.clone(),
@@ -570,5 +557,66 @@ fn build_filter_description(args: &ReindexArgs) -> String {
         String::new()
     } else {
         format!(" ({})", parts.join(", "))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_date_accepts_yyyy_mm_dd() {
+        let dt = parse_date("2024-06-15").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_accepts_rfc3339() {
+        let dt = parse_date("2024-06-15T14:30:00Z").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(14, 30, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_accepts_rfc3339_with_offset() {
+        let dt = parse_date("2024-06-15T10:00:00-05:00").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(15, 0, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_rejects_invalid_input() {
+        let err = parse_date("not-a-date").unwrap_err();
+        assert!(err.to_string().contains("Invalid date"));
+        assert!(err.to_string().contains("YYYY-MM-DD"));
+        assert!(err.to_string().contains("RFC3339"));
+    }
+
+    #[test]
+    fn parse_date_rejects_wrong_date_format() {
+        let err = parse_date("01-15-2024").unwrap_err();
+        assert!(err.to_string().contains("Invalid date"));
     }
 }
