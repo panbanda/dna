@@ -559,3 +559,64 @@ fn build_filter_description(args: &ReindexArgs) -> String {
         format!(" ({})", parts.join(", "))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_date_accepts_yyyy_mm_dd() {
+        let dt = parse_date("2024-06-15").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(0, 0, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_accepts_rfc3339() {
+        let dt = parse_date("2024-06-15T14:30:00Z").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(14, 30, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_accepts_rfc3339_with_offset() {
+        let dt = parse_date("2024-06-15T10:00:00-05:00").unwrap();
+        assert_eq!(
+            dt,
+            Utc.from_utc_datetime(
+                &NaiveDate::from_ymd_opt(2024, 6, 15)
+                    .unwrap()
+                    .and_hms_opt(15, 0, 0)
+                    .unwrap()
+            )
+        );
+    }
+
+    #[test]
+    fn parse_date_rejects_invalid_input() {
+        let err = parse_date("not-a-date").unwrap_err();
+        assert!(err.to_string().contains("Invalid date"));
+        assert!(err.to_string().contains("YYYY-MM-DD"));
+        assert!(err.to_string().contains("RFC3339"));
+    }
+
+    #[test]
+    fn parse_date_rejects_wrong_date_format() {
+        let err = parse_date("01-15-2024").unwrap_err();
+        assert!(err.to_string().contains("Invalid date"));
+    }
+}
