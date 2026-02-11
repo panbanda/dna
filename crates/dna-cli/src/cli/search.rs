@@ -36,11 +36,11 @@ pub struct ListArgs {
     #[arg(long = "filter")]
     filters: Vec<String>,
 
-    /// Show only artifacts updated after timestamp
+    /// Show only artifacts updated after this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     after: Option<String>,
 
-    /// Show only artifacts updated before timestamp
+    /// Show only artifacts updated before this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     before: Option<String>,
 
@@ -51,11 +51,11 @@ pub struct ListArgs {
 
 #[derive(Args)]
 pub struct DiffArgs {
-    /// Show changes since this date (YYYY-MM-DD)
+    /// Show changes since this date (YYYY-MM-DD or RFC3339 datetime)
     #[arg(long)]
     since: String,
 
-    /// Show changes until this date (YYYY-MM-DD). Defaults to now.
+    /// Show changes until this date (YYYY-MM-DD or RFC3339 datetime). Defaults to now.
     #[arg(long)]
     until: Option<String>,
 
@@ -158,7 +158,7 @@ pub struct ReindexArgs {
     #[arg(long)]
     pub id: Option<String>,
 
-    /// Only reindex artifacts modified after this date (YYYY-MM-DD).
+    /// Only reindex artifacts modified after this date (YYYY-MM-DD or RFC3339 datetime).
     /// Useful for incremental reindexing after bulk imports or migrations.
     #[arg(long)]
     pub since: Option<String>,
@@ -236,16 +236,8 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
     let service = ArtifactService::new(db, embedding);
 
     let metadata = parse_metadata(&args.filters)?;
-    let after = args
-        .after
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
-    let before = args
-        .before
-        .as_ref()
-        .map(|s| chrono::DateTime::parse_from_rfc3339(s).map(|dt| dt.with_timezone(&chrono::Utc)))
-        .transpose()?;
+    let after = args.after.as_ref().map(|s| parse_date(s)).transpose()?;
+    let before = args.before.as_ref().map(|s| parse_date(s)).transpose()?;
 
     let filters = SearchFilters {
         kind: args.kind,
@@ -269,8 +261,17 @@ pub async fn execute_list(args: ListArgs) -> Result<()> {
 }
 
 fn parse_date(s: &str) -> Result<chrono::DateTime<Utc>> {
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
+        return Ok(dt.with_timezone(&Utc));
+    }
     NaiveDate::parse_from_str(s, "%Y-%m-%d")
-        .map_err(|e| anyhow::anyhow!("Invalid date '{}': {}. Use YYYY-MM-DD.", s, e))
+        .map_err(|e| {
+            anyhow::anyhow!(
+                "Invalid date '{}': {}. Use YYYY-MM-DD or RFC3339 (e.g. 2024-01-15T10:30:00Z).",
+                s,
+                e
+            )
+        })
         .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
 }
 
@@ -477,21 +478,7 @@ pub async fn execute_reindex(args: ReindexArgs) -> Result<()> {
     // Build filters from args
     let metadata = parse_metadata(&args.labels)?;
 
-    let after = args
-        .since
-        .as_ref()
-        .map(|s| {
-            NaiveDate::parse_from_str(s, "%Y-%m-%d")
-                .map_err(|e| {
-                    anyhow::anyhow!(
-                        "Invalid date format for --since '{}': {}. Use YYYY-MM-DD.",
-                        s,
-                        e
-                    )
-                })
-                .map(|date| Utc.from_utc_datetime(&date.and_hms_opt(0, 0, 0).unwrap()))
-        })
-        .transpose()?;
+    let after = args.since.as_ref().map(|s| parse_date(s)).transpose()?;
 
     let filters = SearchFilters {
         kind: args.kind.clone(),
