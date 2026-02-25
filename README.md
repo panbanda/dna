@@ -22,7 +22,7 @@ Capture the essential identity of your system - decisions, constraints, and guar
 
 ```bash
 # Homebrew (macOS/Linux)
-brew install panbanda/dna/dna
+brew install panbanda/brews/dna
 
 # Or download binary from releases
 curl -LO https://github.com/panbanda/dna/releases/latest/download/dna-$(uname -s | tr '[:upper:]' '[:lower:]')-$(uname -m).tar.gz
