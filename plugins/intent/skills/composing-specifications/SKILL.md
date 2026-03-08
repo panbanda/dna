@@ -50,7 +50,9 @@ Intents tell the agent why this work matters and what decisions have already bee
 
 ```bash
 dna search "<the deliverable>" --kind contract
+dna search "<the domain area>" --kind contract
 dna search "<the deliverable>" --kind constraint
+dna search "<the domain area>" --kind constraint
 ```
 
 Contracts define what the agent must not break. Constraints define the limits the agent must work within.
