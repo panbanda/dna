@@ -48,6 +48,22 @@ dna search "<any computation this step involves>" --kind algorithm
 
 If an algorithm artifact exists, the implementation must match its logic. Do not invent alternative formulas.
 
+### Check tradeoffs
+
+```bash
+dna search "<competing concerns in this step>" --kind tradeoff
+```
+
+If two concerns in the plan conflict (e.g., latency vs correctness), verify a tradeoff artifact resolves the conflict. If no tradeoff exists, surface the conflict before proceeding.
+
+### Check escalations
+
+```bash
+dna search "<what this step changes>" --kind escalation
+```
+
+If an escalation applies to this step, the plan must include a human checkpoint. Do not proceed autonomously past an escalation boundary.
+
 ## Conflict resolution
 
 If a step conflicts with stored truth:

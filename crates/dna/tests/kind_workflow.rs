@@ -10,14 +10,14 @@ use tempfile::TempDir;
 // -- Tests --
 
 #[test]
-fn init_intent_template_registers_eleven_kinds() {
+fn init_intent_template_registers_thirteen_kinds() {
     let temp_dir = TempDir::new().unwrap();
     let svc = ConfigService::new(temp_dir.path());
     let template = get_template("intent").unwrap();
 
     let config = svc.init_from_template(template).unwrap();
 
-    assert_eq!(config.kinds.definitions.len(), 11);
+    assert_eq!(config.kinds.definitions.len(), 13);
     for slug in &[
         "intent",
         "contract",
@@ -30,6 +30,8 @@ fn init_intent_template_registers_eleven_kinds() {
         "reporting",
         "compliance",
         "constraint",
+        "tradeoff",
+        "escalation",
     ] {
         assert!(config.kinds.has(slug), "Missing kind: {}", slug);
     }
@@ -43,7 +45,7 @@ fn init_intent_template_persists_and_reloads() {
     svc.init_from_template(template).unwrap();
 
     let reloaded = svc.load().unwrap();
-    assert_eq!(reloaded.kinds.definitions.len(), 11);
+    assert_eq!(reloaded.kinds.definitions.len(), 13);
     assert!(reloaded.kinds.has("evaluation"));
     assert!(reloaded
         .kinds
@@ -60,7 +62,7 @@ fn init_template_idempotent() {
     let template = get_template("intent").unwrap();
     svc.init_from_template(template).unwrap();
     let config = svc.init_from_template(template).unwrap();
-    assert_eq!(config.kinds.definitions.len(), 11);
+    assert_eq!(config.kinds.definitions.len(), 13);
 }
 
 #[test]
@@ -171,7 +173,7 @@ async fn full_intent_template_workflow() {
 
     // 1. Init with intent template
     let config = config_svc.init_from_template(template).unwrap();
-    assert_eq!(config.kinds.definitions.len(), 11);
+    assert_eq!(config.kinds.definitions.len(), 13);
 
     let db = Arc::new(TestDatabase::new());
     let embedding: Arc<dyn EmbeddingProvider> = Arc::new(TestEmbedding);
@@ -225,7 +227,7 @@ async fn full_intent_template_workflow() {
 
     // 4. Add custom kind
     config_svc.add_kind("deployment", "Deploy rules").unwrap();
-    assert_eq!(config_svc.load().unwrap().kinds.definitions.len(), 12);
+    assert_eq!(config_svc.load().unwrap().kinds.definitions.len(), 14);
 
     artifact_svc
         .add(

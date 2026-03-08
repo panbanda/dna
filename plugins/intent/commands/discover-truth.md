@@ -153,7 +153,7 @@ This prevents the agent from re-searching areas it already covered or forgetting
 
 ### Phase 2: Discovery (Spawn All Agents in Parallel)
 
-Use the Task tool to spawn all 11 agents simultaneously. Each agent reads the recon summary, explores the codebase, and optionally queries external sources to find candidates for its assigned kind.
+Use the Task tool to spawn all 13 agents simultaneously. Each agent reads the recon summary, explores the codebase, and optionally queries external sources to find candidates for its assigned kind.
 
 Each agent writes its output to `.dna/discovery/<kind>.json` with this schema:
 
@@ -243,9 +243,19 @@ Give it the contents of `.dna/discovery/recon.json`.
 
 ---
 
+**Use the tradeoff-discoverer agent** to analyze the codebase and write `.dna/discovery/tradeoff.json`.
+Give it the contents of `.dna/discovery/recon.json`.
+
+---
+
+**Use the escalation-discoverer agent** to analyze the codebase and write `.dna/discovery/escalation.json`.
+Give it the contents of `.dna/discovery/recon.json`.
+
+---
+
 ### Phase 3: Truth Judgment (After All Discovery Agents Complete)
 
-Wait for all 11 agents to finish, then:
+Wait for all 13 agents to finish, then:
 
 **Use the truth-judge agent** to read all `.dna/discovery/*.json` files (except `recon.json`).
 
@@ -270,7 +280,8 @@ Store all validated truth artifacts:
 # For each entry in store.json:
 dna add <kind> "<content>" \
   --name "<name>" \
-  --label domain=<domain> \
+  # replay every label from store.json, e.g. domain=..., severity=..., regulation=...
+  --label <key>=<value> ... \
   --label source=discovery \
   --label confidence=<confidence> \
   --context "<context>"
@@ -285,7 +296,8 @@ TRUTH ARTIFACTS STORED:
   Intents: N    Contracts: N    Constraints: N
   Algorithms: N    Evaluations: N    Integrations: N
   Glossary: N    Monitors: N    Compliance: N
-  Pace: N    Reporting: N
+  Pace: N    Reporting: N    Tradeoffs: N
+  Escalations: N
   Total: N
 
 TECHNICAL DEBT IDENTIFIED:

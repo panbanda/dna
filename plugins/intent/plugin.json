@@ -1,6 +1,6 @@
 {
   "name": "dna-intent",
-  "description": "Intent template skills for writing intents, contracts, constraints, algorithms, and evaluations with correct structure and specificity",
+  "description": "Intent template skills for writing intents, contracts, constraints, algorithms, evaluations, tradeoffs, escalations, and composing specifications with correct structure and specificity",
   "version": "0.3.0",
   "author": {
     "name": "Panbanda"
@@ -13,6 +13,9 @@
     "intent-template",
     "contracts",
     "constraints",
+    "tradeoffs",
+    "escalations",
+    "specifications",
     "governance"
   ]
 }

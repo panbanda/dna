@@ -22,6 +22,8 @@ dna search "<what you are building or changing>"
 dna search "<the domain area>" --kind intent
 dna search "<the domain area>" --kind contract
 dna search "<the domain area>" --kind constraint
+dna search "<the domain area>" --kind tradeoff
+dna search "<the domain area>" --kind escalation
 ```
 
 Also list recent artifacts in the area if labels are used:
@@ -30,11 +32,13 @@ Also list recent artifacts in the area if labels are used:
 dna list --kind intent --label domain=<relevant-area>
 ```
 
-You are looking for three things:
+You are looking for five things:
 
 - **Intents**: WHY the system works this way. These constrain your goals.
 - **Contracts**: BOUNDARIES between components. These constrain your interfaces.
 - **Constraints**: LIMITS on what is acceptable. These constrain your approach.
+- **Tradeoffs**: PRIORITIES when concerns clash. These resolve conflicts between intents or constraints.
+- **Escalations**: DECISION BOUNDARIES for autonomy. These tell you when to stop and involve a human.
 
 ## Step 2: Narrow the solution space
 
@@ -46,7 +50,7 @@ If multiple approaches are valid, prefer the one that aligns with the most store
 
 If there are no relevant artifacts, that is signal. It means this area has no codified truth yet. Your plan should include capturing the decisions you are about to make. See the [capturing-artifacts](../capturing-artifacts/SKILL.md) skill.
 
-For each significant decision in your plan, ask: "Is this a new intent, contract, or constraint that should be stored?"
+For each significant decision in your plan, ask: "Is this a new intent, contract, constraint, tradeoff, or escalation that should be stored?"
 
 ## Step 4: Surface conflicts early
 
