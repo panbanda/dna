@@ -86,8 +86,11 @@ Evaluations define what "done" means. Without evaluations, the agent has no way 
 
 ```bash
 dna search "<the deliverable>" --kind glossary
+dna search "<the domain area>" --kind glossary
 dna search "<the deliverable>" --kind algorithm
+dna search "<the domain area>" --kind algorithm
 dna search "<the deliverable>" --kind compliance
+dna search "<the domain area>" --kind compliance
 ```
 
 Domain context prevents misunderstanding. Glossary terms ensure the agent uses words correctly. Algorithms ensure it computes correctly. Compliance ensures it does not violate regulations.

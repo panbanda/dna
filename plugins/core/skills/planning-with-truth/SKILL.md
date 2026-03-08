@@ -50,7 +50,7 @@ If multiple approaches are valid, prefer the one that aligns with the most store
 
 If there are no relevant artifacts, that is signal. It means this area has no codified truth yet. Your plan should include capturing the decisions you are about to make. See the [capturing-artifacts](../capturing-artifacts/SKILL.md) skill.
 
-For each significant decision in your plan, ask: "Is this a new intent, contract, or constraint that should be stored?"
+For each significant decision in your plan, ask: "Is this a new intent, contract, constraint, tradeoff, or escalation that should be stored?"
 
 ## Step 4: Surface conflicts early
 

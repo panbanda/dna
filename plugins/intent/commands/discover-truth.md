@@ -280,7 +280,8 @@ Store all validated truth artifacts:
 # For each entry in store.json:
 dna add <kind> "<content>" \
   --name "<name>" \
-  --label domain=<domain> \
+  # replay every label from store.json, e.g. domain=..., severity=..., regulation=...
+  --label <key>=<value> ... \
   --label source=discovery \
   --label confidence=<confidence> \
   --context "<context>"

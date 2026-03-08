@@ -63,7 +63,7 @@ Grep: "super.?user"
 Grep: "impersonat"
 ```
 
-Operations restricted to higher permission levels reveal decision boundaries. If only admins can do something, there is an implicit escalation: "non-admin agents must escalate this action."
+Operations restricted to higher permission levels may reveal decision boundaries, but RBAC alone is not proof of a human escalation. Capture an escalation only when the workflow also requires review, approval, or other human involvement beyond simple authorization.
 
 ### 4. Operational runbooks and playbooks
 

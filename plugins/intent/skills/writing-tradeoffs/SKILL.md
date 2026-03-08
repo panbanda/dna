@@ -89,6 +89,6 @@ When you encounter conflicting artifacts during planning:
 ## Relationship to other kinds
 
 - Tradeoffs resolve conflicts between **intents**: when two intents pull in opposite directions
-- Tradeoffs can override **constraints**: a constraint may be relaxed for a higher concern
+- Tradeoffs operate **within constraints**: they resolve priority conflicts only after hard limits are respected
 - Tradeoffs inform **evaluations**: the winning concern should have evaluations; the losing concern may have softer targets
 - Tradeoffs complement **escalations**: when neither side can clearly win, the tradeoff may say "escalate to human"

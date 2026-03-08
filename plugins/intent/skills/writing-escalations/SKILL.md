@@ -105,5 +105,5 @@ When forming a plan with autonomous execution steps:
 
 - Escalations guard **intents**: when an intent is critical enough that violating it requires human judgment
 - Escalations complement **tradeoffs**: when a tradeoff cannot resolve a conflict, the escalation says "ask a human"
-- Escalations reference **constraints**: crossing a constraint boundary may trigger an escalation rather than a hard failure
+- Escalations may sit **before** high-risk actions that approach important limits, but they do not replace **constraints**. If an action would violate a constraint, the agent must not proceed.
 - Escalations inform **pace**: slow-pace areas often need escalations for any autonomous changes

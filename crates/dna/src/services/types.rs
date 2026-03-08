@@ -624,7 +624,7 @@ pub static TEMPLATE_INTENT: Template = Template {
         },
         TemplateKind {
             slug: "constraint",
-            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Use --label type=must|must-not|preference. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
+            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Use --label type=must|must-not|preference|capacity|performance|architecture. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
         },
         TemplateKind {
             slug: "tradeoff",

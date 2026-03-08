@@ -320,10 +320,10 @@ When two valid goals, constraints, or intents conflict, a tradeoff declares whic
 
 **Examples**:
 ```bash
-dna add tradeoff "Customer satisfaction over resolution speed: never auto-close without confirming resolution"
-dna add tradeoff "Billing correctness over latency: billing calculations must be provably correct even if slow"
-dna add tradeoff "Data consistency over availability: reject writes during partitions rather than risk divergence"
-dna add tradeoff "Security over developer velocity: all dependency updates require security review"
+dna add tradeoff "Customer satisfaction over resolution speed: never auto-close without confirming resolution" --label domain=support
+dna add tradeoff "Billing correctness over latency: billing calculations must be provably correct even if slow" --label domain=billing
+dna add tradeoff "Data consistency over availability: reject writes during partitions rather than risk divergence" --label domain=data
+dna add tradeoff "Security over developer velocity: all dependency updates require security review" --label domain=security
 ```
 
 ### escalation
