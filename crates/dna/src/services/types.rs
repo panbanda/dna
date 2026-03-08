@@ -534,6 +534,10 @@ static INTENT_LABELS: &[TemplateLabel] = &[
         key: "confidence",
         description: "Confidence level (high, medium, low)",
     },
+    TemplateLabel {
+        key: "severity",
+        description: "Impact level if violated (critical, high, medium, low)",
+    },
 ];
 
 /// Agentic template label definitions
@@ -620,7 +624,15 @@ pub static TEMPLATE_INTENT: Template = Template {
         },
         TemplateKind {
             slug: "constraint",
-            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
+            description: "Technical limit or boundary: one capacity, performance, or architectural constraint. Use --label type=must|must-not|preference. Ex: 'Max upload size: 100MB' or 'Must run stateless for horizontal scaling'",
+        },
+        TemplateKind {
+            slug: "tradeoff",
+            description: "Priority when concerns clash: which concern wins and under what conditions. Use --label domain=<area>. Ex: 'Customer satisfaction over resolution speed: never auto-close without confirming resolution'",
+        },
+        TemplateKind {
+            slug: "escalation",
+            description: "Decision boundary for agent autonomy: when to stop autonomous work and involve a human. Use --label severity=critical|high|medium|low. Ex: 'Escalate to human when estimated cost impact exceeds $1000'",
         },
     ],
 };
@@ -1298,7 +1310,9 @@ mod tests {
             assert!(slugs.contains(&"reporting"));
             assert!(slugs.contains(&"compliance"));
             assert!(slugs.contains(&"constraint"));
-            assert_eq!(slugs.len(), 11);
+            assert!(slugs.contains(&"tradeoff"));
+            assert!(slugs.contains(&"escalation"));
+            assert_eq!(slugs.len(), 13);
         }
 
         #[test]
@@ -1368,7 +1382,8 @@ mod tests {
             assert!(keys.contains(&"regulation"));
             assert!(keys.contains(&"source"));
             assert!(keys.contains(&"confidence"));
-            assert_eq!(keys.len(), 13);
+            assert!(keys.contains(&"severity"));
+            assert_eq!(keys.len(), 14);
         }
 
         #[test]

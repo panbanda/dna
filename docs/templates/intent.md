@@ -286,8 +286,9 @@ These are capacity, performance, or architectural constraints that bound what th
 - Performance boundaries
 - Architectural constraints
 - Resource limits
+- Explicit prohibitions (must-not constraints)
 
-**Labels**: `--label type=capacity|performance|architecture`
+**Labels**: `--label type=must|must-not|preference|capacity|performance|architecture`
 
 **Examples**:
 ```bash
@@ -296,6 +297,60 @@ dna add constraint "API response time must be < 500ms at p95" --label type=perfo
 dna add constraint "Must run stateless for horizontal scaling" --label type=architecture
 dna add constraint "Maximum 1000 concurrent WebSocket connections per node" --label type=capacity
 dna add constraint "Database queries must not exceed 100ms" --label type=performance
+dna add constraint "Must not store raw credit card numbers in any system" --label type=must-not
+```
+
+### tradeoff
+
+**Purpose**: Priority when competing concerns clash.
+
+When two valid goals, constraints, or intents conflict, a tradeoff declares which one wins and under what conditions. Without tradeoffs, agents optimize for whatever is easiest to measure.
+
+**What belongs here**:
+- Prioritization between competing concerns
+- Conditions under which one concern overrides another
+- Reasoning for the priority ordering
+
+**What doesn't belong**:
+- Preferences without stakes
+- Single concerns (those are intents or constraints)
+- Values too abstract to act on
+
+**Labels**: `--label domain=<area>`
+
+**Examples**:
+```bash
+dna add tradeoff "Customer satisfaction over resolution speed: never auto-close without confirming resolution"
+dna add tradeoff "Billing correctness over latency: billing calculations must be provably correct even if slow"
+dna add tradeoff "Data consistency over availability: reject writes during partitions rather than risk divergence"
+dna add tradeoff "Security over developer velocity: all dependency updates require security review"
+```
+
+### escalation
+
+**Purpose**: Decision boundaries for agent autonomy.
+
+Defines when an agent should stop autonomous work and involve a human. These are guard rails on agent autonomy itself -- distinct from constraints (system limits) and pace (change velocity).
+
+**What belongs here**:
+- Triggers that require human involvement
+- Thresholds for autonomous decision-making
+- Role or team to escalate to
+- Context the human needs to decide
+
+**What doesn't belong**:
+- Hard system limits (those are constraints)
+- Change velocity rules (those are pace)
+- Business rules (those are intents)
+
+**Labels**: `--label severity=critical|high|medium|low`
+
+**Examples**:
+```bash
+dna add escalation "Escalate to engineering lead when cost impact exceeds \$1000" --label severity=high
+dna add escalation "Escalate to security team when auth/authz/encryption logic changes" --label severity=critical
+dna add escalation "Escalate to product owner when requirement is ambiguous and no tradeoff resolves it" --label severity=medium
+dna add escalation "Escalate to data team when schema migration affects >5 tables" --label severity=high
 ```
 
 ## Usage
@@ -341,3 +396,5 @@ dna list --kind compliance --label regulation=gdpr
 3. **Include examples in content**: Help AI understand with concrete examples
 4. **Review pace layer assignments**: Ensure critical items are marked slow
 5. **Link evaluations to intents**: Evaluations verify that intents are maintained
+6. **Resolve conflicts with tradeoffs**: When two intents pull in opposite directions, store a tradeoff
+7. **Define escalation boundaries**: For high-risk domains, explicitly state when agents must involve a human

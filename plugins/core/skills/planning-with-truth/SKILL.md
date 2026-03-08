@@ -22,6 +22,8 @@ dna search "<what you are building or changing>"
 dna search "<the domain area>" --kind intent
 dna search "<the domain area>" --kind contract
 dna search "<the domain area>" --kind constraint
+dna search "<the domain area>" --kind tradeoff
+dna search "<the domain area>" --kind escalation
 ```
 
 Also list recent artifacts in the area if labels are used:
@@ -30,11 +32,13 @@ Also list recent artifacts in the area if labels are used:
 dna list --kind intent --label domain=<relevant-area>
 ```
 
-You are looking for three things:
+You are looking for five things:
 
 - **Intents**: WHY the system works this way. These constrain your goals.
 - **Contracts**: BOUNDARIES between components. These constrain your interfaces.
 - **Constraints**: LIMITS on what is acceptable. These constrain your approach.
+- **Tradeoffs**: PRIORITIES when concerns clash. These resolve conflicts between intents or constraints.
+- **Escalations**: DECISION BOUNDARIES for autonomy. These tell you when to stop and involve a human.
 
 ## Step 2: Narrow the solution space
 

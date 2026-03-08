@@ -1,6 +1,6 @@
 # Intent Template: Kind Reference
 
-The intent template provides 11 kinds for truth-driven governance. This reference covers the 6 kinds not covered by dedicated skills (pace, monitor, glossary, integration, reporting, compliance). For intent, contract, constraint, algorithm, and evaluation, see the corresponding skills.
+The intent template provides 13 kinds for truth-driven governance. This reference covers the 6 kinds not covered by dedicated skills (pace, monitor, glossary, integration, reporting, compliance). For intent, contract, constraint, algorithm, evaluation, tradeoff, and escalation, see the corresponding skills.
 
 ## pace
 

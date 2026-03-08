@@ -26,6 +26,8 @@ Verify the artifact passes these checks:
 | constraint | Setting LIMITS on what is acceptable | Preferences or suggestions |
 | algorithm | Describing HOW a computation works (the logic, not the code) | Code snippets |
 | evaluation | Defining what SUCCESS means (testable criteria) | Vague quality goals |
+| tradeoff | Declaring PRIORITY when concerns clash | Single concerns without conflict |
+| escalation | Defining DECISION BOUNDARIES for agent autonomy | Hard system limits (use constraint) |
 | monitor | Specifying WHAT to observe and alert on | Tool-specific dashboards |
 | glossary | Defining TERMS precisely to prevent ambiguity | Obvious vocabulary |
 | integration | Describing HOW external systems connect | Internal service details |
@@ -33,7 +35,7 @@ Verify the artifact passes these checks:
 | compliance | Capturing REGULATORY requirements with source | General best practices |
 | reporting | Defining WHAT must be queryable for business needs | Report layouts |
 
-If unsure between two kinds, choose the one that answers the more fundamental question. "Why" (intent) is more fundamental than "how" (algorithm). "What are the limits" (constraint) is more fundamental than "what to observe" (monitor).
+If unsure between two kinds, choose the one that answers the more fundamental question. "Why" (intent) is more fundamental than "how" (algorithm). "What are the limits" (constraint) is more fundamental than "what to observe" (monitor). "Which concern wins" (tradeoff) is more fundamental than "when to ask a human" (escalation).
 
 ## Writing the content
 
