@@ -1,6 +1,85 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:best-practices"
+  ],
+  "schedule": ["before 6am on Monday"],
+  "prConcurrentLimit": 5,
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "schedule": []
+  },
+  "packageRules": [
+    {
+      "description": "Group Rust minor and patch updates to reduce PR noise",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "rust non-major dependencies"
+    },
+    {
+      "description": "Group arrow crates together (tightly coupled versions)",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^arrow/"],
+      "groupName": "arrow ecosystem"
+    },
+    {
+      "description": "Group candle ML crates together",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^candle/"],
+      "groupName": "candle ecosystem"
+    },
+    {
+      "description": "Group serde crates together",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^serde/"],
+      "groupName": "serde ecosystem"
+    },
+    {
+      "description": "Group tokio async ecosystem",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^tokio/"],
+      "groupName": "tokio ecosystem"
+    },
+    {
+      "description": "Group tracing crates together",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^tracing/"],
+      "groupName": "tracing ecosystem"
+    },
+    {
+      "description": "Group utoipa OpenAPI crates together",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["/^utoipa/"],
+      "groupName": "utoipa ecosystem"
+    },
+    {
+      "description": "Group GitHub Actions digest updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "groupName": "github actions non-major"
+    },
+    {
+      "description": "Automerge Rust patch updates after stabilization period",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["patch"],
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    },
+    {
+      "description": "Automerge Rust minor updates after longer stabilization",
+      "matchManagers": ["cargo"],
+      "matchUpdateTypes": ["minor"],
+      "automerge": true,
+      "minimumReleaseAge": "7 days"
+    },
+    {
+      "description": "Automerge GitHub Actions non-major updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["digest", "patch", "minor"],
+      "automerge": true,
+      "minimumReleaseAge": "3 days"
+    }
   ]
 }
