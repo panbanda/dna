@@ -12,6 +12,7 @@ Skills that teach AI agents how to use DNA as a truth layer during the developme
 | `capturing-artifacts` | Capture | How to write good artifacts. Quality tests, kind selection, label conventions. |
 | `searching-artifacts` | Any | Query patterns and score interpretation for different search strategies. |
 | `managing-kinds` | Setup | When and how to register custom artifact kinds. |
+| `edit-dna` | Any | Interactive conversation for deliberate truth changes. Acts as a truth guardian that searches, surfaces conflicts, debates proposals, and only applies changes with explicit human reasoning. |
 
 ## Lifecycle
 
@@ -19,9 +20,15 @@ Skills that teach AI agents how to use DNA as a truth layer during the developme
 Plan -------> Validate -------> Execute -------> Capture
 search DNA    check plan vs.    check before     record new
 for context   known truth       each change      decisions
+                        \                        /
+                         +------ Edit DNA ------+
+                         deliberate truth changes
+                         via interactive debate
 ```
 
 Every phase consults DNA. The planning phase is broadest (search everything relevant). Validation is targeted (does this plan violate known constraints?). Execution checks are narrow (does this file touch a governed area?). Capture records decisions that emerged during development.
+
+The `edit-dna` skill provides a dedicated path for deliberate truth changes outside the normal development lifecycle. It can be invoked at any phase — via text or voice mode — when the operator needs to add, modify, or remove truth artifacts with full conflict analysis and pushback.
 
 ## Usage
 
